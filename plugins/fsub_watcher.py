@@ -51,10 +51,14 @@ async def enforce_strict_fsub(client: Client, message: Message):
                     pass
 
             name = message.from_user.first_name
-            warn_text = f"**{name}**, to write in the chat, you need to subscribe to the channel:\n{fsub_channel}"
-            btn = InlineKeyboardMarkup([[InlineKeyboardButton("🛡️ Join & Verify", url=invite_link)]])
+            warn_text = f"**{name}**, you must subscribe to the channel to chat here."
+            
+            # Button Updated to "Subscribe"
+            btn = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Subscribe", url=invite_link)]])
             
             warn_msg = await message.reply_text(warn_text, reply_markup=btn)
+            
+            # Auto-delete warning
             await asyncio.sleep(10)
             await warn_msg.delete()
             raise StopPropagation
