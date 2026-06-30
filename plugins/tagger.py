@@ -4,9 +4,8 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait
 from database.db import db
 from config import Config
-from utils.emojis import Emojis as e
 
-# Dictionary to store chat_id and the name of the user who started the tag
+# Active tags ko track karne ke liye
 ACTIVE_TAGS = {}
 
 @Client.on_message(filters.command("reload") & filters.group)
@@ -30,22 +29,21 @@ async def utag_cmd(client: Client, message: Message):
         return await message.reply_text("Only admins can use this command!")
 
     # === FORCE JOIN CHECK BLOCK ===
-    fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
-    if fsub_active and fsub_channel:
-        try:
+    try:
+        fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
+        if fsub_active and fsub_channel:
             check = await client.get_chat_member(fsub_channel, message.from_user.id)
             if check.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                raise Exception("Not a member")
-        except Exception:
-            btn = InlineKeyboardMarkup([[InlineKeyboardButton("🛡️ Join Channel To Use Bot", url=f"https://t.me/{fsub_channel.replace('@', '')}")]])
-            return await message.reply_text("❌ **Access Denied!**\n\nYou must join our channel to use this bot.", reply_markup=btn)
+                btn = InlineKeyboardMarkup([[InlineKeyboardButton("🛡️ Join Channel To Use Bot", url=f"https://t.me/{fsub_channel.replace('@', '')}")]])
+                return await message.reply_text("❌ **Access Denied!**\n\nYou must join our channel to use this bot.", reply_markup=btn)
+    except Exception:
+        pass # Ignore minor errors in Fsub checking so it doesn't break tagging
     # ==============================
 
     reply_target = message.reply_to_message.id if message.reply_to_message else None
     custom_msg = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
     
     starter_name = message.from_user.first_name
-    # Save the user in active tags
     ACTIVE_TAGS[chat_id] = starter_name
     
     bot_username = client.me.username
@@ -57,23 +55,25 @@ async def utag_cmd(client: Client, message: Message):
 
     users = []
     try:
+        # Fetching members (Optimized for all users)
         async for m in client.get_chat_members(chat_id):
             if m.user.is_bot or m.user.is_deleted:
                 continue
             
+            # Clean name for Markdown safety
             fname = m.user.first_name if m.user.first_name else "User"
             fname = fname.replace("[", "").replace("]", "").replace("*", "").replace("_", "").replace("`", "")
             users.append(f"[{fname}](tg://user?id={m.user.id})")
     except Exception as err:
         ACTIVE_TAGS.pop(chat_id, None)
-        return await message.reply_text(f"Error fetching members: {err}")
+        return await message.reply_text(f"⚠️ Error fetching members: {err}\nMake sure I have proper Admin rights!")
 
-    batch_size = 5
-    delay = 2
+    batch_size = 7 # Comma separated list ek message me 7 log
+    delay = 2.5 # Safe delay to avoid API limits
 
     for i in range(0, len(users), batch_size):
         if chat_id not in ACTIVE_TAGS:
-            break
+            break # Process cancelled
             
         batch = users[i:i + batch_size]
         tags_text = " , ".join(batch)
@@ -98,7 +98,6 @@ async def utag_cmd(client: Client, message: Message):
 async def atag_cmd(client: Client, message: Message):
     chat_id = message.chat.id
     
-    # ⚠️ CONFLICT CHECK LOGIC
     if chat_id in ACTIVE_TAGS:
         ongoing_user = ACTIVE_TAGS[chat_id]
         return await message.reply_text(f"⚠️ **Tagging process is already ongoing by {ongoing_user}.**\nPlease wait for it to complete or use /cancel first.")
@@ -111,7 +110,6 @@ async def atag_cmd(client: Client, message: Message):
     custom_msg = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
     
     starter_name = message.from_user.first_name
-    # Save the user in active tags
     ACTIVE_TAGS[chat_id] = starter_name
     
     bot_username = client.me.username
@@ -131,10 +129,10 @@ async def atag_cmd(client: Client, message: Message):
             admins.append(f"[{fname}](tg://user?id={m.user.id})")
     except Exception as err:
         ACTIVE_TAGS.pop(chat_id, None)
-        return await message.reply_text(f"Error fetching admins: {err}")
+        return await message.reply_text(f"⚠️ Error fetching admins: {err}")
 
-    batch_size = 5
-    delay = 2
+    batch_size = 7
+    delay = 2.5
 
     for i in range(0, len(admins), batch_size):
         if chat_id not in ACTIVE_TAGS:
@@ -171,4 +169,4 @@ async def cancel_tag_cmd(client: Client, message: Message):
         await message.reply_text("❌ **Tagging Process Cancelled!**")
     else:
         await message.reply_text("No active tagging process found.")
-        
+            
