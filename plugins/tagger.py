@@ -1,7 +1,7 @@
 import asyncio
 import random
 from pyrogram import Client, filters, enums
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait
 from database.db import db
 from utils.emojis import Emojis as e, PREMIUM_EMOJIS
@@ -23,6 +23,7 @@ async def set_format_cmd(client: Client, message: Message):
     await db.set_tag_format(message.chat.id, new_format)
     await message.reply_text(f"{e.TICK} **Tag format updated to:**\n`{new_format}`")
 
+
 @Client.on_message(filters.command(["tagall", "all"]) & filters.group)
 async def tag_all_cmd(client: Client, message: Message):
     chat_id = message.chat.id
@@ -33,6 +34,20 @@ async def tag_all_cmd(client: Client, message: Message):
     member = await client.get_chat_member(chat_id, message.from_user.id)
     if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] and message.from_user.id != Config.OWNER_ID:
         return await message.reply_text(f"{e.CANCEL} Only admins can use tagall!")
+
+    # === FORCE JOIN CHECK BLOCK ===
+    fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
+    if fsub_active and fsub_channel:
+        try:
+            # Check user status in the required channel
+            check = await client.get_chat_member(fsub_channel, message.from_user.id)
+            if check.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                raise Exception("Not a member")
+        except Exception:
+            # Join button generate karna
+            btn = InlineKeyboardMarkup([[InlineKeyboardButton(f"{e.SHIELD} Join Channel To Use Bot", url=f"https://t.me/{fsub_channel.replace('@', '')}")]])
+            return await message.reply_text(f"{e.CANCEL} **Access Denied!**\n\nYou must join our channel to use this bot.", reply_markup=btn)
+    # ==============================
 
     custom_msg = message.text.split(None, 1)[1] if len(message.command) > 1 else "Wake up everyone!"
     ACTIVE_TAGS.append(chat_id)
@@ -60,7 +75,8 @@ async def tag_all_cmd(client: Client, message: Message):
 
     await status_msg.edit_text(f"{e.FLASH} **Tagging Started!**\n{e.SHIELD} Target: {len(users)} users\n{e.SETTING} Message: {custom_msg}")
 
-    batch_size = 5 # Ise settings se link karenge next phase me
+    # TODO: Inko database settings se link karna baaki hai
+    batch_size = 5 
     delay = 2
 
     for i in range(0, len(users), batch_size):
@@ -82,6 +98,7 @@ async def tag_all_cmd(client: Client, message: Message):
         ACTIVE_TAGS.remove(chat_id)
         await message.reply_text(f"{e.TICK} **Tagging Completed Successfully!**")
 
+
 @Client.on_message(filters.command("cancel") & filters.group)
 async def cancel_tag_cmd(client: Client, message: Message):
     chat_id = message.chat.id
@@ -94,4 +111,4 @@ async def cancel_tag_cmd(client: Client, message: Message):
         await message.reply_text(f"{e.CANCEL} **Tagging Process Stopped by Admin!**")
     else:
         await message.reply_text("No active tagging process found.")
-  
+        
