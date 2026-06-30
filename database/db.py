@@ -61,4 +61,25 @@ try:
     db = Database(Config.MONGO_URL, "UTaggerBot")
 except Exception as e:
     print(f"Failed to connect to Database: {e}")
-    
+
+    # === FORCE JOIN (FSUB) LOGIC ===
+    async def update_fsub_status(self, group_id, status: bool):
+        await self.groups.update_one(
+            {"_id": group_id}, 
+            {"$set": {"fsub_active": status}}, 
+            upsert=True
+        )
+
+    async def set_fsub_channel(self, group_id, channel_id):
+        await self.groups.update_one(
+            {"_id": group_id}, 
+            {"$set": {"fsub_channel": channel_id}}, 
+            upsert=True
+        )
+
+    async def get_fsub_config(self, group_id):
+        group = await self.groups.find_one({"_id": group_id})
+        if group:
+            return group.get("fsub_active", False), group.get("fsub_channel", None)
+        return False, None
+        
