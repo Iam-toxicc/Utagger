@@ -1,5 +1,4 @@
 import asyncio
-import random
 from pyrogram import Client, filters, enums
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait
@@ -7,7 +6,8 @@ from database.db import db
 from config import Config
 from utils.emojis import Emojis as e
 
-ACTIVE_TAGS = []
+# Dictionary to store chat_id and the name of the user who started the tag
+ACTIVE_TAGS = {}
 
 @Client.on_message(filters.command("reload") & filters.group)
 async def reload_cmd(client: Client, message: Message):
@@ -20,8 +20,10 @@ async def reload_cmd(client: Client, message: Message):
 async def utag_cmd(client: Client, message: Message):
     chat_id = message.chat.id
     
+    # ⚠️ CONFLICT CHECK LOGIC
     if chat_id in ACTIVE_TAGS:
-        return await message.reply_text("A tagging process is already running! Use /cancel first.")
+        ongoing_user = ACTIVE_TAGS[chat_id]
+        return await message.reply_text(f"⚠️ **Tagging process is already ongoing by {ongoing_user}.**\nPlease wait for it to complete or use /cancel first.")
     
     member = await client.get_chat_member(chat_id, message.from_user.id)
     if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] and message.from_user.id != Config.OWNER_ID:
@@ -39,11 +41,13 @@ async def utag_cmd(client: Client, message: Message):
             return await message.reply_text("❌ **Access Denied!**\n\nYou must join our channel to use this bot.", reply_markup=btn)
     # ==============================
 
+    reply_target = message.reply_to_message.id if message.reply_to_message else None
     custom_msg = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
-    ACTIVE_TAGS.append(chat_id)
     
-    # EXACT FORMAT FROM IMAGE 1000055892.jpg
     starter_name = message.from_user.first_name
+    # Save the user in active tags
+    ACTIVE_TAGS[chat_id] = starter_name
+    
     bot_username = client.me.username
     start_text = (
         f"Tag Operation is started by\n**{starter_name}** .\n"
@@ -56,13 +60,15 @@ async def utag_cmd(client: Client, message: Message):
         async for m in client.get_chat_members(chat_id):
             if m.user.is_bot or m.user.is_deleted:
                 continue
-            # Simple link format with user's first name
-            users.append(f"[{m.user.first_name}](tg://user?id={m.user.id})")
+            
+            fname = m.user.first_name if m.user.first_name else "User"
+            fname = fname.replace("[", "").replace("]", "").replace("*", "").replace("_", "").replace("`", "")
+            users.append(f"[{fname}](tg://user?id={m.user.id})")
     except Exception as err:
-        if chat_id in ACTIVE_TAGS: ACTIVE_TAGS.remove(chat_id)
+        ACTIVE_TAGS.pop(chat_id, None)
         return await message.reply_text(f"Error fetching members: {err}")
 
-    batch_size = 7 # Comma separated ke liye batch size bada diya gaya hai
+    batch_size = 5
     delay = 2
 
     for i in range(0, len(users), batch_size):
@@ -72,39 +78,42 @@ async def utag_cmd(client: Client, message: Message):
         batch = users[i:i + batch_size]
         tags_text = " , ".join(batch)
         
-        # Adding Quote format like in 1000055892.jpg
         if custom_msg:
             text = f"**{starter_name}**\n> {custom_msg}\n\n{tags_text}"
         else:
             text = tags_text
         
         try:
-            await client.send_message(chat_id, text)
+            await client.send_message(chat_id, text, reply_to_message_id=reply_target)
             await asyncio.sleep(delay)
         except FloodWait as e_fw:
             await asyncio.sleep(e_fw.value) 
         except Exception:
             continue
 
-    if chat_id in ACTIVE_TAGS:
-        ACTIVE_TAGS.remove(chat_id)
+    ACTIVE_TAGS.pop(chat_id, None)
 
 
 @Client.on_message(filters.command(["atag", "tagadmins"]) & filters.group)
 async def atag_cmd(client: Client, message: Message):
     chat_id = message.chat.id
     
+    # ⚠️ CONFLICT CHECK LOGIC
     if chat_id in ACTIVE_TAGS:
-        return await message.reply_text("A tagging process is already running! Use /cancel first.")
+        ongoing_user = ACTIVE_TAGS[chat_id]
+        return await message.reply_text(f"⚠️ **Tagging process is already ongoing by {ongoing_user}.**\nPlease wait for it to complete or use /cancel first.")
     
     member = await client.get_chat_member(chat_id, message.from_user.id)
     if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] and message.from_user.id != Config.OWNER_ID:
         return await message.reply_text("Only admins can use this command!")
 
+    reply_target = message.reply_to_message.id if message.reply_to_message else None
     custom_msg = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
-    ACTIVE_TAGS.append(chat_id)
     
     starter_name = message.from_user.first_name
+    # Save the user in active tags
+    ACTIVE_TAGS[chat_id] = starter_name
+    
     bot_username = client.me.username
     await message.reply_text(
         f"Admin Tag Operation is started by\n**{starter_name}** .\n"
@@ -116,9 +125,12 @@ async def atag_cmd(client: Client, message: Message):
         async for m in client.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
             if m.user.is_bot or m.user.is_deleted:
                 continue
-            admins.append(f"[{m.user.first_name}](tg://user?id={m.user.id})")
+            
+            fname = m.user.first_name if m.user.first_name else "Admin"
+            fname = fname.replace("[", "").replace("]", "").replace("*", "").replace("_", "").replace("`", "")
+            admins.append(f"[{fname}](tg://user?id={m.user.id})")
     except Exception as err:
-        if chat_id in ACTIVE_TAGS: ACTIVE_TAGS.remove(chat_id)
+        ACTIVE_TAGS.pop(chat_id, None)
         return await message.reply_text(f"Error fetching admins: {err}")
 
     batch_size = 5
@@ -137,15 +149,14 @@ async def atag_cmd(client: Client, message: Message):
             text = tags_text
         
         try:
-            await client.send_message(chat_id, text)
+            await client.send_message(chat_id, text, reply_to_message_id=reply_target)
             await asyncio.sleep(delay)
         except FloodWait as e_fw:
             await asyncio.sleep(e_fw.value) 
         except Exception:
             continue
 
-    if chat_id in ACTIVE_TAGS:
-        ACTIVE_TAGS.remove(chat_id)
+    ACTIVE_TAGS.pop(chat_id, None)
 
 
 @Client.on_message(filters.command("cancel") & filters.group)
@@ -156,8 +167,8 @@ async def cancel_tag_cmd(client: Client, message: Message):
         return
         
     if chat_id in ACTIVE_TAGS:
-        ACTIVE_TAGS.remove(chat_id)
+        ACTIVE_TAGS.pop(chat_id, None)
         await message.reply_text("❌ **Tagging Process Cancelled!**")
     else:
         await message.reply_text("No active tagging process found.")
-    
+        
