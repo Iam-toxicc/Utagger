@@ -1,8 +1,7 @@
 import asyncio
-from pyrogram import Client, filters, enums
+from pyrogram import Client, filters, enums, StopPropagation
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait
-from pyrogram.handlers.message_handler import StopPropagation
 from database.db import db
 from config import Config
 
@@ -79,11 +78,13 @@ async def enforce_strict_fsub(client: Client, message: Message):
             await asyncio.sleep(10)
             await warn_msg.delete()
 
-            # StopPropagation ensures ki agar user ne join nahi kiya, toh koi aur command (jaise /utag) run na ho
+            # StopPropagation ensures ki agar user ne join nahi kiya, toh aage koi command run na ho
             raise StopPropagation
             
+        except StopPropagation:
+            # Isko explicitly raise karna padta hai varna niche wala Exception isko kha jayega
+            raise 
         except FloodWait as e:
             await asyncio.sleep(e.value)
         except Exception as err:
             pass # Ignore deletion errors if bot lacks rights
-          
