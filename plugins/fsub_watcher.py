@@ -1,26 +1,10 @@
 import asyncio
 from pyrogram import Client, filters, StopPropagation
-from pyrogram.types import Message, ChatMemberUpdated, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatMemberStatus
 from database.db import db
 from config import Config
 
-# Global Cache
-VERIFIED_CACHE = {}
-
-# 1. CHANNEL LEAVE DETECTOR (Jab banda channel leave kare, cache turant delete)
-@Client.on_chat_member_updated(filters.channel)
-async def handle_channel_leave(client: Client, event: ChatMemberUpdated):
-    if event.new_chat_member and event.new_chat_member.status == ChatMemberStatus.LEFT:
-        user_id = event.new_chat_member.user.id
-        channel_id = event.chat.id
-        cache_key = f"{user_id}_{channel_id}"
-        
-        # Cache se hatao, taaki agle msg par bot check kare
-        if cache_key in VERIFIED_CACHE:
-            del VERIFIED_CACHE[cache_key]
-
-# 2. MESSAGE WATCHER (Gatekeeper)
 @Client.on_message(filters.group & ~filters.bot, group=-1)
 async def enforce_strict_fsub(client: Client, message: Message):
     if not message.from_user:
@@ -29,21 +13,9 @@ async def enforce_strict_fsub(client: Client, message: Message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
+    # Owner & Admin Bypass
     if user_id == Config.OWNER_ID:
         return
-
-    fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
-    if not fsub_active or not fsub_channel:
-        return
-
-    target_chat = int(fsub_channel) if str(fsub_channel).startswith("-100") else fsub_channel
-    cache_key = f"{user_id}_{target_chat}"
-
-    # Cache check
-    if VERIFIED_CACHE.get(cache_key):
-        return
-
-    # Check Admin Bypass
     try:
         member = await client.get_chat_member(chat_id, user_id)
         if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
@@ -51,13 +23,18 @@ async def enforce_strict_fsub(client: Client, message: Message):
     except:
         pass
 
-    # Live Check
+    fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
+    if not fsub_active or not fsub_channel:
+        return
+
+    target_chat = int(fsub_channel) if str(fsub_channel).startswith("-100") else fsub_channel
+    
+    # REAL-TIME CHECK: Har message par live API call
     is_participant = False
     try:
         check = await client.get_chat_member(target_chat, user_id)
         if check.status not in [ChatMemberStatus.LEFT, ChatMemberStatus.BANNED]:
             is_participant = True
-            VERIFIED_CACHE[cache_key] = True 
     except Exception:
         pass
 
