@@ -7,7 +7,9 @@ class Database:
         self.db = self._client[database_name]
         self.users = self.db.users
         self.groups = self.db.groups
+        self.repeat_jobs = self.db.repeat_jobs
 
+    # === USERS & GROUPS LOGIC ===
     async def add_user(self, user_id, name):
         user = await self.users.find_one({"_id": user_id})
         if not user:
@@ -22,6 +24,7 @@ class Database:
             return True
         return False
 
+    # === TAGGING FORMAT LOGIC ===
     async def set_tag_format(self, group_id, format_string):
         await self.groups.update_one(
             {"_id": group_id}, 
@@ -35,9 +38,27 @@ class Database:
             return group["tag_format"]
         return "{emoji} [{name}](tg://user?id={id})"
 
+    # === REPEAT MESSAGES LOGIC ===
+    async def add_repeat_job(self, chat_id, message_id, interval, is_album):
+        await self.repeat_jobs.update_one(
+            {"_id": chat_id},
+            {"$set": {
+                "message_id": message_id, 
+                "interval": interval, 
+                "is_album": is_album
+            }},
+            upsert=True
+        )
+
+    async def remove_repeat_job(self, chat_id):
+        await self.repeat_jobs.delete_one({"_id": chat_id})
+
+    async def get_all_repeat_jobs(self):
+        return await self.repeat_jobs.find().to_list(length=None)
+
 # Initialize DB connection
 try:
     db = Database(Config.MONGO_URL, "UTaggerBot")
 except Exception as e:
     print(f"Failed to connect to Database: {e}")
-  
+    
