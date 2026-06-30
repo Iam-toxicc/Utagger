@@ -56,12 +56,6 @@ class Database:
     async def get_all_repeat_jobs(self):
         return await self.repeat_jobs.find().to_list(length=None)
 
-# Initialize DB connection
-try:
-    db = Database(Config.MONGO_URL, "UTaggerBot")
-except Exception as e:
-    print(f"Failed to connect to Database: {e}")
-
     # === FORCE JOIN (FSUB) LOGIC ===
     async def update_fsub_status(self, group_id, status: bool):
         await self.groups.update_one(
@@ -82,4 +76,10 @@ except Exception as e:
         if group:
             return group.get("fsub_active", False), group.get("fsub_channel", None)
         return False, None
-        
+
+# Initialize DB connection
+try:
+    db = Database(Config.MONGO_URL, "UTaggerBot")
+except Exception as e:
+    print(f"Failed to connect to Database: {e}")
+    
