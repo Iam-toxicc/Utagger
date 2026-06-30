@@ -36,14 +36,13 @@ async def set_fsub_cmd(client: Client, message: Message):
     if len(message.command) < 2:
         return await message.reply_text(
             f"{e.SETTING} **Force Join Setup**\n\n"
-            f"**Public Channel:** `/setfsub @TGVoidAPI_Updates`\n"
+            f"**Public Channel:** `/setfsub @YourChannel`\n"
             f"**Private Channel ID:** `/setfsub -1001234567890`\n\n"
             f"*Note: Make sure the bot is added as an ADMIN in the channel first!*"
         )
 
     channel_input = message.command[1]
     
-    # Check if input is a numeric ID (for private channels)
     if channel_input.startswith("-100"):
         try:
             channel_target = int(channel_input)
@@ -52,25 +51,28 @@ async def set_fsub_cmd(client: Client, message: Message):
     else:
         channel_target = channel_input
 
-    # Verify if bot is admin in the target channel/group
+    warning = ""
     try:
         bot_member = await client.get_chat_member(channel_target, client.me.id)
         if bot_member.status != enums.ChatMemberStatus.ADMINISTRATOR:
             return await message.reply_text(f"{e.CANCEL} I must be an Admin in that channel to check membership!")
     except Exception as err:
-        return await message.reply_text(
-            f"{e.CANCEL} Failed to verify channel.\n\n"
-            f"**Reasons:**\n"
-            f"1. Bot is not added to the channel.\n"
-            f"2. Bot is not an Admin there.\n"
-            f"3. Wrong ID/Username provided.\n\n"
-            f"Error Details: `{err}`"
-        )
+        # Bypass API cache check for private numeric IDs
+        if isinstance(channel_target, int) and "PEER_ID_INVALID" in str(err):
+            warning = f"\n\n⚠️ **Note:** Telegram hasn't cached this private ID yet. I have force-saved it. **Ensure I am an admin there**, or tags will fail!"
+        else:
+            return await message.reply_text(
+                f"{e.CANCEL} Failed to verify channel.\n\n"
+                f"**Reasons:**\n"
+                f"1. Bot is not added to the channel.\n"
+                f"2. Bot is not an Admin there.\n"
+                f"3. Wrong ID/Username provided.\n\n"
+                f"Error Details: `{err}`"
+            )
 
-    # Save the exact input (ID or Username) to DB
     await db.set_fsub_channel(chat_id, str(channel_target))
     await db.update_fsub_status(chat_id, True)
-    await message.reply_text(f"{e.TICK} **Force Join successfully activated for `{channel_target}`!**")
+    await message.reply_text(f"{e.TICK} **Force Join successfully activated for `{channel_target}`!**{warning}")
 
 @Client.on_callback_query(filters.regex(r"^toggle_fsub_") | filters.regex(r"^alert_setfsub") | filters.regex(r"^close_panel"))
 async def admin_callbacks(client: Client, query: CallbackQuery):
@@ -96,4 +98,4 @@ async def admin_callbacks(client: Client, query: CallbackQuery):
         
     elif data == "close_panel":
         await query.message.delete()
-        
+    
