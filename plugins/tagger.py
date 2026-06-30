@@ -5,7 +5,6 @@ from pyrogram.errors import FloodWait
 from database.db import db
 from config import Config
 
-# Active tags ko track karne ke liye
 ACTIVE_TAGS = {}
 
 @Client.on_message(filters.command("reload") & filters.group)
@@ -19,7 +18,6 @@ async def reload_cmd(client: Client, message: Message):
 async def utag_cmd(client: Client, message: Message):
     chat_id = message.chat.id
     
-    # ⚠️ CONFLICT CHECK LOGIC
     if chat_id in ACTIVE_TAGS:
         ongoing_user = ACTIVE_TAGS[chat_id]
         return await message.reply_text(f"⚠️ **Tagging process is already ongoing by {ongoing_user}.**\nPlease wait for it to complete or use /cancel first.")
@@ -32,12 +30,24 @@ async def utag_cmd(client: Client, message: Message):
     try:
         fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
         if fsub_active and fsub_channel:
-            check = await client.get_chat_member(fsub_channel, message.from_user.id)
+            # Convert back to integer if it's a private chat ID
+            target_chat = int(fsub_channel) if fsub_channel.startswith("-100") else fsub_channel
+            
+            check = await client.get_chat_member(target_chat, message.from_user.id)
             if check.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                btn = InlineKeyboardMarkup([[InlineKeyboardButton("🛡️ Join Channel To Use Bot", url=f"https://t.me/{fsub_channel.replace('@', '')}")]])
-                return await message.reply_text("❌ **Access Denied!**\n\nYou must join our channel to use this bot.", reply_markup=btn)
+                raise Exception("Not Joined")
     except Exception:
-        pass # Ignore minor errors in Fsub checking so it doesn't break tagging
+        # Generate Invite Link dynamically if it's a private ID
+        if fsub_channel.startswith("-100"):
+            try:
+                invite_link = await client.export_chat_invite_link(int(fsub_channel))
+            except Exception:
+                invite_link = "https://t.me/" # Fallback
+        else:
+            invite_link = f"https://t.me/{fsub_channel.replace('@', '')}"
+
+        btn = InlineKeyboardMarkup([[InlineKeyboardButton("🛡️ Join Channel To Use Bot", url=invite_link)]])
+        return await message.reply_text("❌ **Access Denied!**\n\nYou must join our channel to use this bot.", reply_markup=btn)
     # ==============================
 
     reply_target = message.reply_to_message.id if message.reply_to_message else None
@@ -55,25 +65,22 @@ async def utag_cmd(client: Client, message: Message):
 
     users = []
     try:
-        # Fetching members (Optimized for all users)
         async for m in client.get_chat_members(chat_id):
             if m.user.is_bot or m.user.is_deleted:
                 continue
-            
-            # Clean name for Markdown safety
             fname = m.user.first_name if m.user.first_name else "User"
             fname = fname.replace("[", "").replace("]", "").replace("*", "").replace("_", "").replace("`", "")
             users.append(f"[{fname}](tg://user?id={m.user.id})")
     except Exception as err:
         ACTIVE_TAGS.pop(chat_id, None)
-        return await message.reply_text(f"⚠️ Error fetching members: {err}\nMake sure I have proper Admin rights!")
+        return await message.reply_text(f"⚠️ Error fetching members: {err}")
 
-    batch_size = 7 # Comma separated list ek message me 7 log
-    delay = 2.5 # Safe delay to avoid API limits
+    batch_size = 7
+    delay = 2.5
 
     for i in range(0, len(users), batch_size):
         if chat_id not in ACTIVE_TAGS:
-            break # Process cancelled
+            break
             
         batch = users[i:i + batch_size]
         tags_text = " , ".join(batch)
@@ -123,7 +130,6 @@ async def atag_cmd(client: Client, message: Message):
         async for m in client.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
             if m.user.is_bot or m.user.is_deleted:
                 continue
-            
             fname = m.user.first_name if m.user.first_name else "Admin"
             fname = fname.replace("[", "").replace("]", "").replace("*", "").replace("_", "").replace("`", "")
             admins.append(f"[{fname}](tg://user?id={m.user.id})")
@@ -169,4 +175,4 @@ async def cancel_tag_cmd(client: Client, message: Message):
         await message.reply_text("❌ **Tagging Process Cancelled!**")
     else:
         await message.reply_text("No active tagging process found.")
-            
+        
