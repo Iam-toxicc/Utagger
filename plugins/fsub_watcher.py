@@ -13,7 +13,6 @@ async def enforce_strict_fsub(client: Client, message: Message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
-    # Owner & Admin Bypass
     if user_id == Config.OWNER_ID:
         return
     try:
@@ -29,7 +28,6 @@ async def enforce_strict_fsub(client: Client, message: Message):
 
     target_chat = int(fsub_channel) if str(fsub_channel).startswith("-100") else fsub_channel
     
-    # REAL-TIME CHECK: Har message par live API call
     is_participant = False
     try:
         check = await client.get_chat_member(target_chat, user_id)
@@ -38,27 +36,33 @@ async def enforce_strict_fsub(client: Client, message: Message):
     except Exception:
         pass
 
-    # Action
     if not is_participant:
         try:
             await message.delete()
             
+            # Link Logic
+            is_private = str(fsub_channel).startswith("-100")
             invite_link = f"https://t.me/{str(fsub_channel).replace('@', '')}"
-            if str(fsub_channel).startswith("-100"):
+            if is_private:
                 try:
                     invite_link = await client.export_chat_invite_link(int(fsub_channel))
                 except:
                     pass
 
+            # Message Formatting
             name = message.from_user.first_name
-            warn_text = f"**{name}**, you must subscribe to the channel to chat here."
+            username = f"@{message.from_user.username}" if message.from_user.username else ""
             
-            # Button Updated to "Subscribe"
+            # Logic: Agar public channel hai toh @username dikhao, varna simple msg
+            if not is_private:
+                warn_text = f"**{name}** {username}, to write in the chat, you need to subscribe to the channel:\n{fsub_channel}"
+            else:
+                warn_text = f"**{name}** {username}, to write in the chat, you need to subscribe to the channel."
+
             btn = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Subscribe", url=invite_link)]])
             
             warn_msg = await message.reply_text(warn_text, reply_markup=btn)
             
-            # Auto-delete warning
             await asyncio.sleep(10)
             await warn_msg.delete()
             raise StopPropagation
