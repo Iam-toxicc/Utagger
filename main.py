@@ -26,6 +26,20 @@ class Utagger(Client):
         me = await self.get_me()
         logger.info(f"💎 Bot Started as {me.username}!")
         
+        # --- STARTUP LOG TO LOGGER CHANNEL ---
+        try:
+            # Pura startup message jo tumhare logger group me jayega
+            startup_msg = (
+                f"💎 **{me.first_name} is now Online!**\n\n"
+                f"👑 **Developer:** Toxic\n"
+                f"⚙️ **Status:** All Systems (Tagger, Security, Repeater) Running smoothly."
+            )
+            # Config se LOGGER_ID utha raha hai
+            await self.send_message(Config.LOGGER_ID, startup_msg)
+            logger.info("✅ Startup log sent to Logger Channel.")
+        except Exception as e:
+            logger.error(f"⚠️ Could not send startup log! Check if LOGGER_ID is in config & Bot is Admin. Error: {e}")
+
         # --- AUTO RESUME REPEAT TASKS ---
         try:
             from plugins.repeater import repeat_worker, ACTIVE_TASKS
@@ -48,7 +62,9 @@ class Utagger(Client):
         except Exception as e:
             logger.error(f"❌ Failed to resume repeat tasks: {e}")
             
-        logger.info("👑 Developer: Toxic (TGVoid)")
+        # --- BRANDING CLEANUP ---
+        # TGVoid hata diya, sirf Toxic
+        logger.info("👑 Developer: Toxic")
 
     async def stop(self, *args):
         await super().stop()
