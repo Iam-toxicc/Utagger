@@ -8,14 +8,20 @@ from utils.emojis import Emojis as e
 
 START_TIME = time.time()
 
-def start_panel_markup(bot_username):
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"{e.GROUP} Add to Group {e.GROUP}", url=f"http://t.me/{bot_username}?startgroup=true")],
+def start_panel_markup(bot_username, is_owner):
+    buttons = [
+        [InlineKeyboardButton(f"{e.GROUP} Add to Group", url=f"http://t.me/{bot_username}?startgroup=true")],
         [InlineKeyboardButton(f"{e.SHIELD} Help & Commands", callback_data="show_help"), 
-         InlineKeyboardButton(f"⚙️ Advanced Features", callback_data="show_features")],
-        [InlineKeyboardButton(f"{e.STATS} Stats", callback_data="show_stats"), 
+         InlineKeyboardButton(f"⚙️ Features", callback_data="show_features")],
+        [InlineKeyboardButton(f"{e.STATS} System Stats", callback_data="show_stats"), 
          InlineKeyboardButton(f"{e.LINK} Support", url="https://t.me/TGVoidAPI_Support")]
-    ])
+    ]
+    
+    # Sirf Owner ko "Owner Panel" button dikhega
+    if is_owner:
+        buttons.insert(3, [InlineKeyboardButton("👑 Owner Panel", callback_data="owner_panel")])
+        
+    return InlineKeyboardMarkup(buttons)
 
 @Client.on_message(filters.command("start") & filters.private)
 async def start_cmd(client: Client, message: Message):
@@ -23,88 +29,50 @@ async def start_cmd(client: Client, message: Message):
     first_name = message.from_user.first_name
     await db.add_user(user_id, first_name)
     
+    is_owner = (user_id == Config.OWNER_ID)
+    
     text = f"""
 {e.CROWN} **Welcome to TGVoid Engine, {first_name}!** {e.CROWN}
 
 I am a high-performance bot built for **Telegram Dominance**. 
 My ecosystem handles everything from bulk tagging to automated security.
-
-{e.DIAMOND} **Total Users:** `{await db.users.count_documents({})}`
-{e.GROUP} **Total Groups:** `{await db.groups.count_documents({})}`
 """
-    markup = start_panel_markup(client.me.username)
+    markup = start_panel_markup(client.me.username, is_owner)
+    
     if Config.START_PIC:
         await message.reply_photo(photo=Config.START_PIC, caption=text, reply_markup=markup)
     else:
         await message.reply_text(text=text, reply_markup=markup)
 
-# --- CALLBACK HANDLERS ---
 @Client.on_callback_query()
 async def callbacks(client: Client, query: CallbackQuery):
     data = query.data
+    is_owner = (query.from_user.id == Config.OWNER_ID)
     
     if data == "back_to_start":
-        text = f"{e.CROWN} **Welcome to TGVoid Engine, {query.from_user.first_name}!** {e.CROWN}\n\n{e.DIAMOND} **Total Users:** `{await db.users.count_documents({})}`\n{e.GROUP} **Total Groups:** `{await db.groups.count_documents({})}`"
-        await query.message.edit_text(text, reply_markup=start_panel_markup(client.me.username))
+        text = f"{e.CROWN} **Welcome to TGVoid Engine, {query.from_user.first_name}!** {e.CROWN}\n\nI am a high-performance bot built for **Telegram Dominance**."
+        await query.message.edit_text(text, reply_markup=start_panel_markup(client.me.username, is_owner))
 
-    elif data == "show_features":
-        text = f"""
-⚙️ **Advanced TGVoid Features** ⚙️
-
-> 🛡️ **Strict FSub (Force Join):**
-> Automatically deletes messages of non-subscribed users and alerts them with a 30s auto-delete warning.
-
-> 🔄 **Auto-Repeater:**
-> Schedule messages/albums at custom intervals. Never let your shop/service go offline.
-
-> ⚡ **Tagging Engine:**
-> Professional batch tagging with custom formatting and FloodWait protection.
-
-> 👑 **Ecosystem Sync:**
-> Centralized branding with `@ToxicTGUpdates` and `@TGVoidAPI_Support`.
-"""
-        markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_to_start")]])
-        await query.message.edit_text(text=text, reply_markup=markup)
-
-    elif data == "show_help":
-        text = f"""
-{e.FLASH} **Command Center** {e.FLASH}
-
-> **Admin Commands:**
-> `/tagall` - Tag everyone
-> `/setfsub @channel` - Activate Security
-> `/settings` - Group Configuration
-> `/repeat[2,5,60]min` - Start Auto-Repost
-> `/cancel` - Stop current task
-"""
-        markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_to_start")]])
-        await query.message.edit_text(text=text, reply_markup=markup)
+    elif data == "owner_panel":
+        if not is_owner:
+            return await query.answer("❌ Access Denied!", show_alert=True)
+        text = f"👑 **Owner Control Center**\n\n> Manage your broadcasts and global settings here."
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📢 Broadcast", callback_data="broadcast_cmd"), InlineKeyboardButton("📊 Global Stats", callback_data="show_stats")],
+            [InlineKeyboardButton("🔙 Back", callback_data="back_to_start")]
+        ])
+        await query.message.edit_text(text, reply_markup=markup)
 
     elif data == "show_stats":
-        cpu = psutil.cpu_percent()
-        ram = psutil.virtual_memory().percent
-        uptime = int(time.time() - START_TIME)
-        h, m = divmod(uptime, 3600)
-        m, s = divmod(m, 60)
+        cpu, ram = psutil.cpu_percent(), psutil.virtual_memory().percent
+        u = await db.users.count_documents({})
+        g = await db.groups.count_documents({})
         
-        users_count = await db.users.count_documents({})
-        groups_count = await db.groups.count_documents({})
-        
-        text = (
-            f"📊 **System Status**\n\n"
-            f"👥 `Total Users   :` `{users_count}`\n"
-            f"🏢 `Total Groups  :` `{groups_count}`\n\n"
-            f"💻 `CPU           :` `{cpu}%`\n"
-            f"💾 `RAM           :` `{ram}%`\n"
-            f"⏱️ `Uptime        :` `{h}h {m}m {s}s`\n\n"
-            f"*Powered by Toxic Ecosystem*"
-        )
-        await query.message.edit_text(text=text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_to_start")]]))
+        text = f"📊 **System Status**\n\n👥 Users: `{u}` | 🏢 Groups: `{g}`\n💻 CPU: `{cpu}%` | 💾 RAM: `{ram}%`"
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_to_start")]]))
 
-@Client.on_message(filters.new_chat_members)
-async def auto_group_save(client: Client, message: Message):
-    for member in message.new_chat_members:
-        if member.id == client.me.id:
-            await db.add_group(message.chat.id, message.chat.title)
-            await message.reply_text(f"{e.TICK} **Successfully Synced with TGVoid Ecosystem.**")
-            
+    # Baki 'show_features' aur 'show_help' waisa hi rahega...
+    elif data == "show_features":
+        text = "⚙️ **Advanced TGVoid Features**\n\n> 🛡️ Strict FSub\n> 🔄 Auto-Repeater\n> ⚡ Tagging Engine"
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_to_start")]]))
+        
