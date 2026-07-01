@@ -24,7 +24,7 @@ async def start_cmd(client: Client, message: Message):
         [InlineKeyboardButton("🎧 ᴧᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ᴄʜᴧᴛ 🎧", url=f"https://t.me/{client.me.username}?startgroup=true")],
         [InlineKeyboardButton("ʜᴇʟᴘ ᴧɴᴅ ᴄᴏᴍᴍᴧɴᴅs", callback_data="help_main")],
         [InlineKeyboardButton("ᴜᴘᴅᴧᴛᴇs ↗", url="https://t.me/ToxicTGUpdates"), 
-         InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/TGVoidAPI_Support")]
+         InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/ToxicStoreSupport")]
     ])
     
     # Safe Photo Sending Logic to prevent crashes
