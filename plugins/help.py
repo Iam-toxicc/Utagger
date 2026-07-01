@@ -14,7 +14,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         )
         markup = InlineKeyboardMarkup([
             [InlineKeyboardButton("ᴛᴧɢɢᴇʀ", "help_tag"), InlineKeyboardButton("ʀᴇᴘᴇᴧᴛᴇʀ", "help_repeat")],
-            [InlineKeyboardButton("sᴇᴄᴜʀɪᴛʏ", "help_fsub"), InlineKeyboardButton("ᴛʜᴜᴍʙɴᴧɪʟ", "help_thumb")],
+            [InlineKeyboardButton("sᴇᴄᴜʀɪᴛʏ", "help_fsub"), InlineKeyboardButton("ʙɪᴏʟɪɴᴋ", "help_biolink")],
             [InlineKeyboardButton("ᴧᴅᴍɪɴ", "help_admin"), InlineKeyboardButton("ᴏᴡɴᴇʀ", "help_owner")],
             [InlineKeyboardButton("ʙᴧᴄᴋ", "back_to_start")]
         ])
@@ -47,8 +47,9 @@ async def help_callbacks(client: Client, query: CallbackQuery):
     elif query.data == "help_fsub":
         text = (
             f"> ⊚ **sᴇᴄᴜʀɪᴛʏ ᴄᴏᴍᴍᴧɴᴅs :**\n>\n"
-            f"> ➻ `/fsub` : ᴛᴏɢɢʟᴇ ғᴏʀᴄᴇ ᴊᴏɪɴ.\n"
-            f"> ➻ `/setfsub` : sᴇᴛ ғ-sᴜʙ ʟɪɴᴋ.\n"
+            f"> ➻ `/fsub {{on/off}}` : ᴛᴏɢɢʟᴇ ғᴏʀᴄᴇ ᴊᴏɪɴ.\n"
+            f"> ➻ `/setfsub {{id}}` : sᴇᴛ ғ-sᴜʙ ʟɪɴᴋ.\n"
+            f"> ➻ `/approve` : ᴡʜɪᴛᴇʟɪsᴛ ᴀ ᴜsᴇʀ.\n"
             f"> ➻ `/check` : ᴄʜᴇᴄᴋ ᴜsᴇʀ sᴛᴀᴛᴜs.\n\n"
             f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ɢʀᴏᴜᴘ ᴏɴʟʏ."
         )
@@ -71,20 +72,29 @@ async def help_callbacks(client: Client, query: CallbackQuery):
     elif query.data == "help_owner":
         text = (
             f"> ⊚ **ᴏᴡɴᴇʀ ᴏɴʟʏ :**\n>\n"
-            f"> ➻ `/broadcast` : ʙʀᴏᴀᴅᴄᴧsᴛ ᴍsɢ.\n"
+            f"> ➻ `/broadcast {{msg}}` : ʙʀᴏᴀᴅᴄᴧsᴛ ᴍsɢ.\n"
             f"> ➻ `/stats` : ɢʟᴏʙᴧʟ ᴍᴇᴛʀɪᴄs.\n\n"
             f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ᴘʀɪᴠᴧᴛᴇ."
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
 
-    # 7. THUMBNAIL (As requested)
-    elif query.data == "help_thumb":
+    # 7. BIOLINK (REPLACED THUMBNAIL)
+    elif query.data == "help_biolink":
         text = (
-            f"> ⊚ **ᴛʜᴜᴍʙɴᴧɪʟ sᴇᴛᴛɪɴɢs :**\n>\n"
-            f"> ➻ `/thumb` : ᴍᴀɴᴀɢᴇ ᴠɪsᴜᴀʟ sᴇᴛᴛɪɴɢs.\n>\n"
-            f"> ⊚ **ᴡʜᴧᴛ ɪs ᴛʜᴜᴍʙɴᴧɪʟ?**\n>\n"
-            f"> 💮 **ᴛᴏɢɢʟᴇ ᴀʀᴛ ᴅɪsᴘʟᴀʏ ᴛᴏ ʀᴇᴅᴜᴄᴇ ᴅᴀᴛᴀ ʟᴏᴀᴅ.**\n\n"
+            f"> ⊚ **ʙɪᴏʟɪɴᴋ sᴇᴛᴛɪɴɢs :**\n>\n"
+            f"> ➻ `/biolink {{on/off}}` : ᴇɴᴀʙʟᴇ/ᴅɪsᴀʙʟᴇ ғᴇᴀᴛᴜʀᴇ.\n>\n"
+            f"> ⊚ **ᴡʜᴧᴛ ɪs ʙɪᴏʟɪɴᴋ?**\n>\n"
+            f"> 💮 **ᴀᴜᴛᴏᴍᴧᴛɪᴄᴧʟʟʏ ᴅᴇʟᴇᴛᴇs ᴍsɢs ɪғ ᴜsᴇʀ ʜᴀs ʟɪɴᴋ ɪɴ ʙɪᴏ.**\n\n"
             f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ɢʀᴏᴜᴘ ᴏɴʟʏ."
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
+
+    # 8. BACK TO START LOGIC
+    elif query.data == "back_to_start":
+        text = "> 💮 **ᴡᴇʟᴄᴏᴍᴇ ʙᴀᴄᴋ!**\n> ʏᴏᴜ ᴀʀᴇ ᴀᴛ ᴛʜᴇ ᴍᴀɪɴ ᴍᴇɴᴜ."
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🎧 ᴧᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ᴄʜᴧᴛ 🎧", url=f"https://t.me/{client.me.username}?startgroup=true")],
+            [InlineKeyboardButton("ʜᴇʟᴘ ᴧɴᴅ ᴄᴏᴍᴍᴧɴᴅs", callback_data="help_main")]
+        ])
+        await query.message.edit_text(text, reply_markup=markup)
         
