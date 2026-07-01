@@ -2,10 +2,9 @@ import asyncio
 from pyrogram import Client, filters, enums
 from pyrogram.types import Message
 
-# Global storage for jobs
-ACTIVE_TASK = {}
+# Global variable renamed to match your main.py
+ACTIVE_TASKS = {}
 
-# Yeh hai tumhara missing function
 async def repeat_worker(client, chat_id, message_id, interval):
     while True:
         await asyncio.sleep(interval)
@@ -14,7 +13,6 @@ async def repeat_worker(client, chat_id, message_id, interval):
         except Exception:
             break
 
-# Time Parser
 def parse_time(time_str):
     time_str = time_str.lower()
     try:
@@ -24,7 +22,6 @@ def parse_time(time_str):
         return val if 60 <= val <= 86400 else None
     except: return None
 
-# Repeat Command
 @Client.on_message(filters.command("repeat") & filters.group)
 async def set_repeat_cmd(client: Client, message: Message):
     # Admin check
@@ -38,7 +35,7 @@ async def set_repeat_cmd(client: Client, message: Message):
     # Anti-Spam check
     msg_to_repeat = message.reply_to_message
     if (msg_to_repeat.text and msg_to_repeat.text.startswith("/")) or \
-       (msg_to_repeat.text and any(x in msg_to_repeat.text.lower() for x in ["/utag", "/atag"])):
+       (msg_to_repeat.text and any(x in msg_to_repeat.text.lower() for x in ["/utag", "/atag", "/cancel"])):
         return await message.reply_text("⚠️ **Security Alert:** Cannot repeat commands or taggers.")
 
     if len(message.command) < 2:
@@ -51,9 +48,9 @@ async def set_repeat_cmd(client: Client, message: Message):
     # Start task
     task = asyncio.create_task(repeat_worker(client, message.chat.id, msg_to_repeat.id, interval))
     
-    if message.chat.id not in ACTIVE_JOBS:
-        ACTIVE_JOBS[message.chat.id] = []
-    ACTIVE_JOBS[message.chat.id].append(task)
+    if message.chat.id not in ACTIVE_TASKS:
+        ACTIVE_TASKS[message.chat.id] = []
+    ACTIVE_TASKS[message.chat.id].append(task)
 
     await message.reply_text(f"✅ **Repeater activated.**")
     
