@@ -10,9 +10,8 @@ async def help_callbacks(client: Client, query: CallbackQuery):
                 f"> ᴇxᴘʟᴏʀᴇ ᴏᴜʀ ғᴇᴀᴛᴜʀᴇs ʙᴇʟᴏᴡ.")
         markup = InlineKeyboardMarkup([
             [InlineKeyboardButton("ᴛᴧɢɢᴇʀ", "help_tag"), InlineKeyboardButton("ʀᴇᴘᴇᴧᴛᴇʀ", "help_repeat")],
-            [InlineKeyboardButton("sᴇᴄᴜʀɪᴛʏ", "help_fsub"), InlineKeyboardButton("ᴛʜᴜᴍʙɴᴧɪʟ", "help_thumb")],
-            [InlineKeyboardButton("ᴧᴅᴍɪɴ", "help_admin"), InlineKeyboardButton("ᴏᴡɴᴇʀ", "help_owner")],
-            [InlineKeyboardButton("ʙᴧᴄᴋ", "back_to_start")]
+            [InlineKeyboardButton("sᴇᴄᴜʀɪᴛʏ", "help_fsub"), InlineKeyboardButton("ᴧᴅᴍɪɴ", "help_admin")],
+            [InlineKeyboardButton("ᴏᴡɴᴇʀ", "help_owner"), InlineKeyboardButton("ʙᴧᴄᴋ", "back_to_start")]
         ])
         await query.message.edit_text(text, reply_markup=markup)
 
@@ -35,11 +34,11 @@ async def help_callbacks(client: Client, query: CallbackQuery):
                 f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ɢʀᴏᴜᴘ ᴏɴʟʏ.")
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
 
-    # 4. SECURITY (Detailed Instructions)
+    # 4. SECURITY (Fixed Error)
     elif query.data == "help_fsub":
         text = (f"> ⊚ **sᴇᴄᴜʀɪᴛʏ ᴄᴏᴍᴍᴧɴᴅs :**\n\n"
-                f"> ➻ `/fsub {on/off}` : ᴛᴏɢɢʟᴇ ᴍᴏᴅᴇ.\n"
-                f"> ➻ `/setfsub {username/id}` : sᴇᴛ ᴄʜᴀɴɴᴇʟ.\n"
+                f"> ➻ `/fsub \{on/off\}` : ᴛᴏɢɢʟᴇ ᴍᴏᴅᴇ.\n"
+                f"> ➻ `/setfsub \{username/id\}` : sᴇᴛ ᴄʜᴀɴɴᴇʟ.\n"
                 f"> ➻ `/check` : ᴄʜᴇᴄᴋ ᴜsᴇʀ sᴛᴀᴛᴜs.\n\n"
                 f"> 💡 **ʜᴏᴡ ᴛᴏ ᴜsᴇ :**\n"
                 f"> ᴘʜʟᴇ ᴄʜᴀɴɴᴇʟ sᴇᴛ ᴋᴀʀᴏ ᴜsᴋᴇ ʙᴀᴀᴅ /fsub on ʟɪᴋʜᴏ.\n\n"
@@ -56,10 +55,10 @@ async def help_callbacks(client: Client, query: CallbackQuery):
                 f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ɢʀᴏᴜᴘ ᴏɴʟʏ.")
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
 
-    # 7. OWNER
+    # 6. OWNER (Fixed Error)
     elif query.data == "help_owner":
         text = (f"> ⊚ **ᴏᴡɴᴇʀ ᴄᴏᴍᴍᴧɴᴅs :**\n\n"
-                f"> ➻ `/broadcast {msg}` : sᴇɴᴅ ᴀʟʟ.\n"
+                f"> ➻ `/broadcast \{message\}` : sᴇɴᴅ ᴀʟʟ.\n"
                 f"> ➻ `/stats` : ɢʟᴏʙᴀʟ ᴅᴀᴛᴀ.\n\n"
                 f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ᴘʀɪᴠᴀᴛᴇ.")
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
