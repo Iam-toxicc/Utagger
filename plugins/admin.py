@@ -1,101 +1,82 @@
+import time
+import os
+import sys
+import psutil
 from pyrogram import Client, filters, enums
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from database.db import db
-from utils.emojis import Emojis as e
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from config import Config
+from database.db import db
 
-# Helper function to generate settings keyboard
-async def get_settings_markup(chat_id):
-    fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
-    fsub_btn_text = "✅ ON" if fsub_active else "❌ OFF"
-    chan_text = fsub_channel if fsub_channel else "Not Set"
+# ----------------- PING COMMAND -----------------
+@Client.on_message(filters.command("ping"))
+async def ping_cmd(client: Client, message: Message):
+    start_time = time.time()
+    m = await message.reply_text("⊚ **ᴘɪɴɢɪɴɢ sʏsᴛᴇᴍ...**")
+    end_time = time.time()
+    
+    ping_time = round((end_time - start_time) * 1000, 3)
+    uptime = int(time.time() - psutil.boot_time())
+    
+    text = (
+        f"⊚ **sʏsᴛᴇᴍ ᴘᴏɴɢ :**\n\n"
+        f"> ➻ **ʟᴀᴛᴇɴᴄʏ :** `{ping_time}ms`\n"
+        f"> ➻ **ᴄᴘᴜ :** `{psutil.cpu_percent()}%`\n"
+        f"> ➻ **ʀᴀᴍ :** `{psutil.virtual_memory().percent}%`\n"
+    )
+    await m.edit_text(text)
 
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"Force Join: {fsub_btn_text}", callback_data=f"toggle_fsub_{chat_id}")],
-        [InlineKeyboardButton(f"FSub Target: {chan_text}", callback_data="alert_setfsub")],
-        [InlineKeyboardButton(f"{e.CANCEL} Close Settings", callback_data="close_panel")]
-    ])
 
+# ----------------- REBOOT COMMAND (OWNER ONLY) -----------------
+@Client.on_message(filters.command("reboot") & filters.user(Config.OWNER_ID))
+async def reboot_cmd(client: Client, message: Message):
+    await message.reply_text("⊚ **ʀᴇʙᴏᴏᴛɪɴɢ sʏsᴛᴇᴍ... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ!**\n> ➻ `The bot will be back online in a few seconds.`")
+    os.execl(sys.executable, sys.executable, *sys.argv)
+
+
+# ----------------- RELOAD COMMAND (ADMINS) -----------------
+@Client.on_message(filters.command("reload") & filters.group)
+async def reload_cmd(client: Client, message: Message):
+    # Yeh check karega ki command dene wala admin hai ya nahi
+    user = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+        return await message.reply_text("❌ **You must be an admin to use this command!**")
+
+    m = await message.reply_text("⊚ **ʀᴇғʀᴇsʜɪɴɢ ᴀᴅᴍɪɴ ᴅᴀᴛᴀ ᴄᴀᴄʜᴇ...**")
+    
+    admin_count = 0
+    async for admin in client.get_chat_members(message.chat.id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
+        admin_count += 1
+        
+    await m.edit_text(
+        f"⊚ **ᴄᴀᴄʜᴇ ʀᴇғʀᴇsʜᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ!**\n\n"
+        f"> ➻ **ᴛᴏᴛᴀʟ ᴀᴅᴍɪɴs ʟᴏᴀᴅᴇᴅ :** `{admin_count}`\n"
+        f"> ➻ **sᴛᴀᴛᴜs :** `Ready for secure operations.`"
+    )
+
+
+# ----------------- SETTINGS COMMAND (ADMINS) -----------------
 @Client.on_message(filters.command("settings") & filters.group)
-async def group_settings_cmd(client: Client, message: Message):
-    chat_id = message.chat.id
-    member = await client.get_chat_member(chat_id, message.from_user.id)
-    if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] and message.from_user.id != Config.OWNER_ID:
-        return await message.reply_text(f"{e.CANCEL} Only admins can open settings!")
+async def settings_cmd(client: Client, message: Message):
+    user = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+        return await message.reply_text("❌ **Only admins can access settings!**")
 
-    markup = await get_settings_markup(chat_id)
-    await message.reply_text(f"{e.SETTING} **Group Settings Panel**\nManage your tagging engine and Force Join here:", reply_markup=markup)
-
-@Client.on_message(filters.command("setfsub") & filters.group)
-async def set_fsub_cmd(client: Client, message: Message):
-    chat_id = message.chat.id
-    member = await client.get_chat_member(chat_id, message.from_user.id)
-    if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] and message.from_user.id != Config.OWNER_ID:
-        return await message.reply_text(f"{e.CANCEL} Only admins can configure Force Join!")
-
-    if len(message.command) < 2:
-        return await message.reply_text(
-            f"{e.SETTING} **Force Join Setup**\n\n"
-            f"**Public Channel:** `/setfsub @YourChannel`\n"
-            f"**Private Channel ID:** `/setfsub -1001234567890`\n\n"
-            f"*Note: Make sure the bot is added as an ADMIN in the channel first!*"
-        )
-
-    channel_input = message.command[1]
+    text = (
+        f"⊚ **ɢʀᴏᴜᴘ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ ᴘᴀɴᴇʟ :**\n\n"
+        f"> ➻ **ᴄʜᴀᴛ ɪᴅ :** `{message.chat.id}`\n"
+        f"> ➻ **ᴀᴅᴊᴜsᴛ ʏᴏᴜʀ ᴘʀᴇғᴇʀᴇɴᴄᴇs ʙᴇʟᴏᴡ.**"
+    )
     
-    if channel_input.startswith("-100"):
-        try:
-            channel_target = int(channel_input)
-        except ValueError:
-            return await message.reply_text(f"{e.CANCEL} Invalid Channel ID format! It must be like `-100xxxxxxxxx`.")
-    else:
-        channel_target = channel_input
-
-    warning = ""
-    try:
-        bot_member = await client.get_chat_member(channel_target, client.me.id)
-        if bot_member.status != enums.ChatMemberStatus.ADMINISTRATOR:
-            return await message.reply_text(f"{e.CANCEL} I must be an Admin in that channel to check membership!")
-    except Exception as err:
-        # Bypass API cache check for private numeric IDs
-        if isinstance(channel_target, int) and "PEER_ID_INVALID" in str(err):
-            warning = f"\n\n⚠️ **Note:** Telegram hasn't cached this private ID yet. I have force-saved it. **Ensure I am an admin there**, or tags will fail!"
-        else:
-            return await message.reply_text(
-                f"{e.CANCEL} Failed to verify channel.\n\n"
-                f"**Reasons:**\n"
-                f"1. Bot is not added to the channel.\n"
-                f"2. Bot is not an Admin there.\n"
-                f"3. Wrong ID/Username provided.\n\n"
-                f"Error Details: `{err}`"
-            )
-
-    await db.set_fsub_channel(chat_id, str(channel_target))
-    await db.update_fsub_status(chat_id, True)
-    await message.reply_text(f"{e.TICK} **Force Join successfully activated for `{channel_target}`!**{warning}")
-
-@Client.on_callback_query(filters.regex(r"^toggle_fsub_") | filters.regex(r"^alert_setfsub") | filters.regex(r"^close_panel"))
-async def admin_callbacks(client: Client, query: CallbackQuery):
-    data = query.data
+    # Inline buttons for settings (Dummy toggles for now, can be linked to DB later)
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("ғ-sᴜʙ : ᴏғғ ❌", callback_data="toggle_fsub"), 
+         InlineKeyboardButton("ᴀɴᴛɪ-sᴘᴀᴍ : ᴏɴ ✅", callback_data="toggle_antispam")],
+        [InlineKeyboardButton("ᴄʟᴏsᴇ ᴘᴀɴᴇʟ 🗑️", callback_data="close_panel")]
+    ])
     
-    if data.startswith("toggle_fsub_"):
-        chat_id = int(data.split("_")[2])
-        member = await client.get_chat_member(chat_id, query.from_user.id)
-        if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] and query.from_user.id != Config.OWNER_ID:
-            return await query.answer("You are not an admin!", show_alert=True)
+    await message.reply_text(text, reply_markup=buttons)
 
-        fsub_active, fsub_channel = await db.get_fsub_config(chat_id)
-        if not fsub_channel:
-            return await query.answer("Please set a channel first using /setfsub!", show_alert=True)
-        
-        await db.update_fsub_status(chat_id, not fsub_active)
-        markup = await get_settings_markup(chat_id)
-        await query.message.edit_reply_markup(reply_markup=markup)
-        await query.answer("Force Join status updated!")
-
-    elif data == "alert_setfsub":
-        await query.answer("Use /setfsub command in chat to change this channel/ID!", show_alert=True)
-        
-    elif data == "close_panel":
-        await query.message.delete()
-    
+# Callback for settings panel closure
+@Client.on_callback_query(filters.regex("close_panel"))
+async def close_settings(client: Client, query):
+    await query.message.delete()
