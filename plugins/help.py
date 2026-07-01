@@ -87,12 +87,13 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
 
-    # 7. BIOLINK & AUTH (Updated with explanation)
+    # 7. BIOLINK & AUTH 
     elif query.data == "help_biolink":
         text = (
             f"> ⊚ **ʙɪᴏʟɪɴᴋ & ᴀᴜᴛʜ sᴇᴛᴛɪɴɢs :**\n>\n"
-            f"> ➻ `/biolink {{on/off}}` : ᴇɴᴀʙʟᴇ/ᴅɪsᴀʙʟᴇ ғᴇᴀᴛᴜʀᴇ.\n"
-            f"> ➻ `/auth` : ʀᴇᴘʟʏ ᴛᴏ ᴜsᴇʀ ᴛᴏ ᴡʜɪᴛᴇʟɪsᴛ ᴛʜᴇᴍ.\n>\n"
+            f"> ➻ `/biolink {{on/off}}` : ᴇɴᴀʙʟᴇ/ᴅɪsᴀʙʟᴇ ʙɪᴏ ᴄʜᴇᴄᴋ.\n"
+            f"> ➻ `/auth` : ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴜsᴇʀ ᴛᴏ ᴡʜɪᴛᴇʟɪsᴛ ᴛʜᴇᴍ.\n"
+            f"> ➻ `/unauth` : ʀᴇᴍᴏᴠᴇ ᴜsᴇʀ ғʀᴏᴍ ᴡʜɪᴛᴇʟɪsᴛ.\n>\n"
             f"> ⊚ **ᴡʜᴧᴛ ɪs ʙɪᴏʟɪɴᴋ & ᴀᴜᴛʜ?**\n>\n"
             f"> 💮 **ʙɪᴏʟɪɴᴋ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇs ᴍsɢs ɪғ ᴀ ᴜsᴇʀ ʜᴀs ᴀ ʟɪɴᴋ ɪɴ ᴛʜᴇɪʀ ʙɪᴏ.**\n"
             f"> 💮 **ᴀᴜᴛʜ ɪs ᴀ ᴍᴀsᴛᴇʀ ᴘᴀss: ɪᴛ ɪɢɴᴏʀᴇs ʙᴏᴛʜ ғ-sᴜʙ & ʙɪᴏʟɪɴᴋ ғᴏʀ ᴛʜᴀᴛ ᴜsᴇʀ.**\n\n"
