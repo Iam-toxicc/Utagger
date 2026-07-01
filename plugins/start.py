@@ -28,5 +28,15 @@ async def start_cmd(client: Client, message: Message):
          InlineKeyboardButton("SUPPORT ↗", url="https://t.me/TGVoidAPI_Support")]
     ])
     
-    await message.reply_photo(photo=Config.START_PIC, caption=text, reply_markup=buttons)
+        # Safe Photo Sending Logic
+    if Config.START_PIC and Config.START_PIC.strip() != "":
+        try:
+            await message.reply_photo(photo=Config.START_PIC, caption=text, reply_markup=buttons)
+        except Exception:
+            # Agar photo link invalid hai toh normal text bhejega
+            await message.reply_text(text=text, reply_markup=buttons)
+    else:
+        # Agar photo set nahi ki hai toh normal text bhejega
+        await message.reply_text(text=text, reply_markup=buttons)
+        
     
