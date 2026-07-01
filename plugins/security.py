@@ -4,181 +4,111 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import Message
 from pyrogram.errors import UserNotParticipant
 
-# ----------------- DATABASE (TEMPORARY) -----------------
+# Database
 GROUP_SETTINGS = {}
-AUTH_USERS = set()  # Master whitelist for bypassing all security checks
+AUTH_USERS = set()
 
 def get_settings(chat_id):
     if chat_id not in GROUP_SETTINGS:
-        GROUP_SETTINGS[chat_id] = {"biolink_enabled": False, "fsub": False, "fsub_channel": None}
+        GROUP_SETTINGS[chat_id] = {
+            "biolink_enabled": False, 
+            "fsub": False, 
+            "fsub_channel": None, 
+            "anti_spam": False
+        }
     return GROUP_SETTINGS[chat_id]
 
-# ----------------- BIOLINK TOGGLE -----------------
+# --- COMMANDS ---
+
 @Client.on_message(filters.command("biolink") & filters.group)
 async def toggle_biolink(client: Client, message: Message):
     user = await client.get_chat_member(message.chat.id, message.from_user.id)
     if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-        return await message.reply_text("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴄʜᴀɴɢᴇ sᴇᴄᴜʀɪᴛʏ sᴇᴛᴛɪɴɢs!**")
+        return await message.reply_text("❌ **Only admins can change security settings!**")
+    state = message.command[1].lower() if len(message.command) > 1 else None
+    if state not in ["on", "off"]: return await message.reply_text("⊚ **Usage:** `/biolink on` or `/biolink off`")
+    get_settings(message.chat.id)["biolink_enabled"] = (state == "on")
+    await message.reply_text(f"✅ **Biolink security {state.upper()}!**")
 
-    if len(message.command) < 2 or message.command[1].lower() not in ["on", "off"]:
-        return await message.reply_text("⊚ **ᴜsᴀɢᴇ :** `/biolink on` ᴏʀ `/biolink off`")
-    
-    state = message.command[1].lower()
-    settings = get_settings(message.chat.id)
-    
-    if state == "on":
-        settings["biolink_enabled"] = True
-        await message.reply_text("✅ **ʙɪᴏʟɪɴᴋ sᴇᴄᴜʀɪᴛʏ ᴇɴᴀʙʟᴇᴅ!**")
-    else:
-        settings["biolink_enabled"] = False
-        await message.reply_text("❌ **ʙɪᴏʟɪɴᴋ sᴇᴄᴜʀɪᴛʏ ᴅɪsᴀʙʟᴇᴅ!**")
-
-# ----------------- FSUB TOGGLE (NEW) -----------------
 @Client.on_message(filters.command("fsub") & filters.group)
 async def toggle_fsub(client: Client, message: Message):
     user = await client.get_chat_member(message.chat.id, message.from_user.id)
     if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-        return await message.reply_text("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs!**")
-        
-    if len(message.command) < 2 or message.command[1].lower() not in ["on", "off"]:
-        return await message.reply_text("⊚ **ᴜsᴀɢᴇ :** `/fsub on` ᴏʀ `/fsub off`")
-        
-    state = message.command[1].lower()
+        return
+    state = message.command[1].lower() if len(message.command) > 1 else None
     settings = get_settings(message.chat.id)
-    
     if state == "on":
-        if not settings.get("fsub_channel"):
-            return await message.reply_text("❌ **ᴘʟᴇᴀsᴇ sᴇᴛ ᴀ ᴄʜᴀɴɴᴇʟ ғɪʀsᴛ ᴜsɪɴɢ `/setfsub`**")
+        if not settings.get("fsub_channel"): return await message.reply_text("❌ Set channel first using /setfsub")
         settings["fsub"] = True
-        await message.reply_text("✅ **ғ-sᴜʙ sᴇᴄᴜʀɪᴛʏ ᴇɴᴀʙʟᴇᴅ!**")
-    else:
-        settings["fsub"] = False
-        await message.reply_text("❌ **ғ-sᴜʙ sᴇᴄᴜʀɪᴛʏ ᴅɪsᴀʙʟᴇᴅ & ʀᴇsᴇᴛ!**")
+    else: settings["fsub"] = False
+    await message.reply_text(f"✅ **F-Sub security {state.upper()}!**")
 
-# ----------------- SET FSUB CHANNEL -----------------
 @Client.on_message(filters.command("setfsub") & filters.group)
 async def set_fsub(client: Client, message: Message):
-    user = await client.get_chat_member(message.chat.id, message.from_user.id)
-    if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-        return await message.reply_text("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs!**")
-        
-    if len(message.command) < 2:
-        return await message.reply_text("⊚ **ᴜsᴀɢᴇ :** `/setfsub @YourChannel` ᴏʀ `-100xxxx`")
-        
+    if len(message.command) < 2: return
     channel = message.command[1]
-    
-    if channel.startswith("-100") and channel.lstrip("-").isdigit():
-        channel = int(channel)
-    elif not channel.startswith("@") and not channel.lstrip("-").isdigit():
-        channel = f"@{channel}"
-        
     settings = get_settings(message.chat.id)
-    settings["fsub_channel"] = channel
-    settings["fsub"] = True  
-    
-    await message.reply_text(
-        f"✅ **ғ-sᴜʙ ᴄʜᴀɴɴᴇʟ sᴇᴛ & ᴇɴᴀʙʟᴇᴅ!**\n"
-        f"> ➻ **ᴄʜᴀɴɴᴇʟ :** {channel}\n"
-        f"> ➻ ⚠️ **ɴᴏᴛᴇ :** ᴍᴀᴋᴇ sᴜʀᴇ ʙᴏᴛ ɪs ᴀᴅᴍɪɴ ɪɴ {channel}!"
-    )
+    settings["fsub_channel"] = channel if channel.startswith("@") or channel.isdigit() else f"@{channel}"
+    settings["fsub"] = True
+    await message.reply_text(f"✅ **F-Sub channel set to {settings['fsub_channel']}**")
 
-# ----------------- AUTH COMMAND -----------------
+@Client.on_message(filters.command("anti") & filters.group)
+async def toggle_antispam(client: Client, message: Message):
+    settings = get_settings(message.chat.id)
+    settings["anti_spam"] = not settings.get("anti_spam", False)
+    await message.reply_text(f"✅ **Anti-Forward (Anti-Spam) is now {'ON' if settings['anti_spam'] else 'OFF'}**")
+
 @Client.on_message(filters.command("auth") & filters.group)
 async def auth_user(client: Client, message: Message):
-    user = await client.get_chat_member(message.chat.id, message.from_user.id)
-    if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-        return await message.reply_text("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴀᴜᴛʜᴏʀɪᴢᴇ ᴜsᴇʀs!**")
+    if not message.reply_to_message: return await message.reply_text("❌ Reply to a user.")
+    AUTH_USERS.add(message.reply_to_message.from_user.id)
+    await message.reply_text("✅ **User Authorized!** They now bypass all security.")
 
-    if not message.reply_to_message:
-        return await message.reply_text("❌ **ᴘʟᴇᴀsᴇ ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴜsᴇʀ ᴛᴏ ᴀᴜᴛʜ ᴛʜᴇᴍ.**")
-    
-    target_id = message.reply_to_message.from_user.id
-    AUTH_USERS.add(target_id)
-    
-    await message.reply_text(
-        f"✅ **{message.reply_to_message.from_user.mention} ʜᴀs ʙᴇᴇɴ ᴀᴜᴛʜᴏʀɪᴢᴇᴅ!**\n"
-        f"> ➻ ᴛʜᴇʏ ᴄᴀɴ ɴᴏᴡ ʙʏᴘᴀss ғsᴜʙ & ʙɪᴏʟɪɴᴋ sᴇᴄᴜʀɪᴛʏ."
-    )
-
-# ----------------- UNAUTH COMMAND (NEW) -----------------
 @Client.on_message(filters.command("unauth") & filters.group)
 async def unauth_user(client: Client, message: Message):
-    user = await client.get_chat_member(message.chat.id, message.from_user.id)
-    if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-        return await message.reply_text("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ!**")
-
-    if not message.reply_to_message:
-        return await message.reply_text("❌ **ᴘʟᴇᴀsᴇ ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴜsᴇʀ ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴛʜᴇɪʀ ᴀᴜᴛʜ.**")
-    
+    if not message.reply_to_message: return
     target_id = message.reply_to_message.from_user.id
     if target_id in AUTH_USERS:
         AUTH_USERS.remove(target_id)
-        await message.reply_text(f"❌ **{message.reply_to_message.from_user.mention}'s ᴀᴜᴛʜ ʜᴀs ʙᴇᴇɴ ʀᴇᴍᴏᴠᴇᴅ!**\n> ➻ ᴛʜᴇʏ ᴡɪʟʟ ɴᴏᴡ ғᴀᴄᴇ ɴᴏʀᴍᴀʟ sᴇᴄᴜʀɪᴛʏ ᴄʜᴇᴄᴋs.")
-    else:
-        await message.reply_text("⚠️ **ᴛʜɪs ᴜsᴇʀ ɪs ɴᴏᴛ ɪɴ ᴛʜᴇ ᴀᴜᴛʜᴏʀɪᴢᴇᴅ ʟɪsᴛ.**")
+        await message.reply_text("❌ **User Unauthorized.**")
 
-# ----------------- CORE SECURITY ENGINE (MONITOR) -----------------
+# --- CORE SECURITY ENGINE ---
 @Client.on_message(filters.group & ~filters.bot, group=2)
 async def security_check(client: Client, message: Message):
-    if not message.from_user:
-        return
-        
+    if not message.from_user: return
     chat_id = message.chat.id
     settings = get_settings(chat_id)
     user_id = message.from_user.id
-    
+
+    # 1. Admin/Auth Bypass
     try:
-        chat_member = await client.get_chat_member(chat_id, user_id)
-        if chat_member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+        member = await client.get_chat_member(chat_id, user_id)
+        if member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER] or user_id in AUTH_USERS:
             return
-    except Exception:
-        pass
-        
-    if user_id in AUTH_USERS:
+    except: pass
+
+    # 2. Anti-Forward Check
+    if settings.get("anti_spam") and (message.forward_from or message.forward_from_chat or message.forward_sender_name):
+        await message.delete()
         return
 
-    # ================= FSUB CHECK =================
-    fsub_channel = settings.get("fsub_channel")
-    if settings.get("fsub", False) and fsub_channel:
-        is_participant = False
+    # 3. FSUB Check
+    if settings.get("fsub") and settings.get("fsub_channel"):
         try:
-            member = await client.get_chat_member(fsub_channel, user_id)
-            if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                is_participant = True
+            await client.get_chat_member(settings["fsub_channel"], user_id)
         except UserNotParticipant:
-            is_participant = False
-        except Exception:
-            is_participant = True 
-            
-        if not is_participant:
             await message.delete()
-            fsub_warn = await message.reply_text(
-                f"❌ **{message.from_user.mention}, ʏᴏᴜ ᴍᴜsᴛ ᴊᴏɪɴ ᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴍᴇssᴀɢᴇ!**\n"
-                f"> ➻ **ᴄʜᴀɴɴᴇʟ :** {fsub_channel}\n"
-                f"> ➻ **ᴀᴅᴍɪɴs :** ᴜsᴇ `/auth` ᴛᴏ ʙʏᴘᴀss.\n\n"
-                f"**ɴᴏᴛᴇ :** ᴛʜɪs ᴡᴀʀɴɪɴɢ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇᴅ ɪɴ 10 sᴇᴄᴏɴᴅs."
-            )
-            await asyncio.sleep(10)
-            await fsub_warn.delete()
-            return  
+            warn = await message.reply_text(f"❌ Join {settings['fsub_channel']} to message!")
+            await asyncio.sleep(10); await warn.delete()
+            return
 
-    # ================= BIOLINK CHECK =================
-    if settings.get("biolink_enabled", False):
+    # 4. Biolink Check
+    if settings.get("biolink_enabled"):
         try:
             user_chat = await client.get_chat(user_id)
-            bio = user_chat.bio or ""
-            
-            if re.search(r"(https?://|t\.me/|@[a-zA-Z0-9_]+)", bio, re.IGNORECASE):
+            if re.search(r"(https?://|t\.me/|@[a-zA-Z0-9_]+)", user_chat.bio or "", re.IGNORECASE):
                 await message.delete()
-                bio_warn = await message.reply_text(
-                    f"> ⚠️ **ᴀᴄᴛɪᴏɴ ʀᴇǫᴜɪʀᴇᴅ :**\n>\n"
-                    f"> ➻ **ᴜsᴇʀ :** {message.from_user.mention}\n"
-                    f"> ➻ **ɪssᴜᴇ :** ʏᴏᴜʀ ʙɪᴏ ᴄᴏɴᴛᴀɪɴs ᴀ ʟɪɴᴋ ᴏʀ ᴜsᴇʀɴᴀᴍᴇ.\n"
-                    f"> ➻ **ʀᴇǫᴜᴇsᴛ :** ᴘʟᴇᴀsᴇ ʀᴇᴍᴏᴠᴇ ɪᴛ ᴏʀ ᴀsᴋ ᴀᴅᴍɪɴs ᴛᴏ `/auth` ʏᴏᴜ.\n\n"
-                    f"**ɴᴏᴛᴇ :** ᴛʜɪs ᴡᴀʀɴɪɴɢ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇᴅ ɪɴ 10 sᴇᴄᴏɴᴅs."
-                )
-                await asyncio.sleep(10)
-                await bio_warn.delete()
-        except Exception:
-            pass
+                warn = await message.reply_text("⚠️ **Action Required:** Remove link from bio to message.")
+                await asyncio.sleep(10); await warn.delete()
+        except: pass
             
