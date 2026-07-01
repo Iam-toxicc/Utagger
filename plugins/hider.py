@@ -1,41 +1,33 @@
-from pyrogram import Client, filters, enums
-from pyrogram.types import Message
-from pyrogram.raw.types import MessageActionChatJoinedByLink, MessageActionChatAddUser, MessageActionChatJoinedByRequest
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
-# Settings global storage
 HIDER_SETTINGS = {}
 
-@Client.on_raw_update(group=2)
-async def raw_hider_handler(client, update, users, chats):
-    if hasattr(update, 'message') and update.message:
-        msg = update.message
+# Regex filter use kar rahe hain kyunki ye kabhi fail nahi hota
+@Client.on_message(filters.regex(r"^/hider$") & filters.group)
+async def hider_command(client, message):
+    chat_id = message.chat.id
+    current_state = HIDER_SETTINGS.get(chat_id, True)
+    status = "🟢 ON" if current_state else "🔴 OFF"
+    
+    text = f"⚙️ **Join/Left Hider System**\n\nStatus: {status}"
+    
+    buttons = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("✅ ON", callback_data="hider_on"),
+            InlineKeyboardButton("❌ OFF", callback_data="hider_off")
+        ]
+    ])
+    await message.reply_text(text, reply_markup=buttons)
+
+# Callback handle karne ke liye
+@Client.on_callback_query(filters.regex(r"^hider_"))
+async def callback_handler(client, query):
+    chat_id = query.message.chat.id
+    if query.data == "hider_on":
+        HIDER_SETTINGS[chat_id] = True
+        await query.answer("Hider Enabled!")
+    elif query.data == "hider_off":
+        HIDER_SETTINGS[chat_id] = False
+        await query.answer("Hider Disabled!")
         
-        # Check if it's a service message
-        if hasattr(msg, 'action') and msg.action:
-            chat_id = msg.chat.id
-            
-            # --- FILTER LOGIC ---
-            # Hum sirf inko delete karenge: Join, Add, Request
-            # VC Invites ko yahan include nahi kiya hai, isliye wo delete nahi honge
-            from pyrogram.raw.types import (
-                MessageActionChatJoinedByLink, 
-                MessageActionChatAddUser, 
-                MessageActionChatJoinedByRequest,
-                MessageActionChatDeleteUser
-            )
-            
-            # Yahan define karo kaunse actions delete karne hain
-            actions_to_delete = (
-                MessageActionChatJoinedByLink,
-                MessageActionChatAddUser,
-                MessageActionChatJoinedByRequest,
-                MessageActionChatDeleteUser
-            )
-            
-            if isinstance(msg.action, actions_to_delete):
-                if HIDER_SETTINGS.get(chat_id, True):
-                    try:
-                        await client.delete_messages(chat_id, msg.id)
-                    except:
-                        pass
-                        
