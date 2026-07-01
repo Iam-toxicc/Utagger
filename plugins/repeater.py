@@ -3,7 +3,7 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import Message
 
 # Global storage for jobs
-ACTIVE_JOBS = {}
+ACTIVE_TASK = {}
 
 # Yeh hai tumhara missing function
 async def repeat_worker(client, chat_id, message_id, interval):
