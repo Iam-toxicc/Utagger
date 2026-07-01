@@ -80,3 +80,39 @@ async def settings_cmd(client: Client, message: Message):
 @Client.on_callback_query(filters.regex("close_panel"))
 async def close_settings(client: Client, query):
     await query.message.delete()
+    
+# ----------------- SETTINGS TOGGLE LOGIC -----------------
+@Client.on_callback_query(filters.regex(r"^toggle_"))
+async def toggle_settings(client: Client, query):
+    # 1. Admin Verification: Check if the person clicking is an admin
+    user = await client.get_chat_member(query.message.chat.id, query.from_user.id)
+    if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+        return await query.answer("❌ You must be an admin to change settings!", show_alert=True)
+
+    data = query.data
+    markup = query.message.reply_markup
+
+    # 2. Dynamic Toggle Logic
+    for row in markup.inline_keyboard:
+        for btn in row:
+            if btn.callback_data == data:
+                if "❌" in btn.text:
+                    # Switch to ON
+                    btn.text = btn.text.replace("ᴏғғ ❌", "ᴏɴ ✅")
+                    action_text = "Enabled ✅"
+                    
+                    # 🔴 YAHAN TUM APNA DB LOGIC LAGA SAKTE HO
+                    # Example: await db.set_group_setting(query.message.chat.id, data, True)
+                    
+                elif "✅" in btn.text:
+                    # Switch to OFF
+                    btn.text = btn.text.replace("ᴏɴ ✅", "ᴏғғ ❌")
+                    action_text = "Disabled ❌"
+                    
+                    # 🔴 YAHAN TUM APNA DB LOGIC LAGA SAKTE HO
+                    # Example: await db.set_group_setting(query.message.chat.id, data, False)
+
+    # 3. Update the UI and send a toast notification
+    await query.message.edit_reply_markup(markup)
+    await query.answer(f"Setting {action_text}", show_alert=False)
+    
