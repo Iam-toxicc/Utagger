@@ -80,50 +80,58 @@ async def settings_cmd(client: Client, message: Message):
 @Client.on_callback_query(filters.regex("close_panel"))
 async def close_settings(client: Client, query):
     await query.message.delete()
-    
-# ----------------- SETTINGS TOGGLE & CLOSE LOGIC -----------------
+
+    # ----------------- SETTINGS TOGGLE & CLOSE LOGIC -----------------
+from plugins.security import get_settings # Backend settings link kiya
+
 @Client.on_callback_query(filters.regex(r"^(toggle_|close_panel)"))
 async def admin_callbacks(client: Client, query):
     
-    # 1. Close Panel Logic
     if query.data == "close_panel":
         return await query.message.delete()
 
-    # 2. Admin Verification for Toggles
     user = await client.get_chat_member(query.message.chat.id, query.from_user.id)
     if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
         return await query.answer("❌ You must be an admin to change settings!", show_alert=True)
 
     data = query.data
     markup = query.message.reply_markup
+    chat_id = query.message.chat.id
+    settings = get_settings(chat_id) # Group ki current settings uthayi
     
+    # Check if F-Sub channel is set before turning it ON
+    if data == "toggle_fsub" and not settings["fsub_channel"] and not settings["fsub"]:
+        return await query.answer("❌ Please set a channel first using /setfsub @YourChannel", show_alert=True)
+
     new_keyboard = []
     action_text = "Updated"
 
-    # 3. Smart Keyboard Reconstruction (100% Working)
     for row in markup.inline_keyboard:
         new_row = []
         for btn in row:
             if btn.callback_data == data:
-                # Agar OFF hai toh ON karo
                 if "❌" in btn.text:
                     new_text = btn.text.replace("ᴏғғ ❌", "ᴏɴ ✅")
                     action_text = "Enabled ✅"
-                # Agar ON hai toh OFF karo
+                    # Backend update
+                    if data == "toggle_fsub": settings["fsub"] = True
+                    if data == "toggle_antispam": settings["antispam"] = True
+                    
                 elif "✅" in btn.text:
                     new_text = btn.text.replace("ᴏɴ ✅", "ᴏғғ ❌")
                     action_text = "Disabled ❌"
+                    # Backend update
+                    if data == "toggle_fsub": settings["fsub"] = False
+                    if data == "toggle_antispam": settings["antispam"] = False
                 else:
                     new_text = btn.text
                 
-                # Naya button append karo
                 new_row.append(InlineKeyboardButton(new_text, callback_data=btn.callback_data))
             else:
-                # Baaki buttons ko waisa hi rehne do
                 new_row.append(btn)
         new_keyboard.append(new_row)
 
-    # 4. Update Message and Send Pop-up
     await query.message.edit_reply_markup(InlineKeyboardMarkup(new_keyboard))
     await query.answer(f"Setting {action_text}", show_alert=False)
     
+            
