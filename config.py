@@ -20,5 +20,5 @@ class Config:
     SUPPORT_GROUP = os.environ.get("SUPPORT_GROUP", "https://t.me/ToxicStoreSupport")       # Yahan group username daalo (bina @ ke)
     
     # Premium start image URL
-    START_PIC = os.environ.get("START_PIC", "")
+    START_PIC = os.environ.get("START_PIC", "https://cdn.phototourl.com/free/2026-07-01-3461fed7-d1b8-4b9d-88d7-e293b5610d81.jpg")
     
