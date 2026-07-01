@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from config import Config
 from database.db import db
 from utils.emojis import Emojis as e
@@ -51,7 +51,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
 
     # 3. OWNER STATS (Restricted)
     elif query.data == "owner_stats":
-        if query.from_user.id not in [Config.OWNER_ID]: # Yahan tumhare Sudo IDs bhi add kar sakte ho
+        if query.from_user.id != Config.OWNER_ID:
             await query.answer("❌ Access Denied! Only Owner can view this.", show_alert=True)
             return
         
@@ -67,4 +67,4 @@ async def help_callbacks(client: Client, query: CallbackQuery):
             [InlineKeyboardButton("📊 System Stats (Owner Only)", callback_data="owner_stats")]
         ])
         await query.message.edit_text("Manage your ecosystem:", reply_markup=markup)
-      
+        
