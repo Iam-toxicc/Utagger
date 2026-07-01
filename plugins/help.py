@@ -2,7 +2,8 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from config import Config
 
-@Client.on_callback_query()
+# 🔴 YAHAN FILTER LAGA DIYA HAI TAAKI YE DUSRE BUTTONS KO BLOCK NA KARE
+@Client.on_callback_query(filters.regex(r"^(help_|back_to_start)"))
 async def help_callbacks(client: Client, query: CallbackQuery):
     
     # 1. MAIN GRID MENU
@@ -22,7 +23,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         ])
         await query.message.edit_text(text, reply_markup=markup)
 
-    # 2. TAGGER CATEGORY (Removed /setformat and added quotes)
+    # 2. TAGGER CATEGORY 
     elif query.data == "help_tag":
         text = (
             f"⊚ **ᴛᴀɢɢɪɴɢ ᴄᴏᴍᴍᴀɴᴅs :**\n\n"
@@ -32,7 +33,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", callback_data="help_main")]]))
 
-    # 3. REPEATER CATEGORY (Added quotes)
+    # 3. REPEATER CATEGORY 
     elif query.data == "help_repeat":
         text = (
             f"⊚ **ʀᴇᴘᴇᴀᴛᴇʀ ᴄᴏᴍᴍᴀɴᴅs :**\n\n"
@@ -44,7 +45,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", callback_data="help_main")]]))
 
-    # 4. SECURITY (FSUB) CATEGORY (Added quotes)
+    # 4. SECURITY (FSUB) CATEGORY 
     elif query.data == "help_fsub":
         text = (
             f"⊚ **sᴇᴄᴜʀɪᴛʏ ᴄᴏᴍᴍᴀɴᴅs :**\n\n"
@@ -54,7 +55,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", callback_data="help_main")]]))
 
-    # 5. ADMIN CATEGORY (Added quotes)
+    # 5. ADMIN CATEGORY 
     elif query.data == "help_admin":
         text = (
             f"⊚ **ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs :**\n\n"
@@ -67,7 +68,7 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", callback_data="help_main")]]))
 
-    # 6. OWNER CATEGORY (Added quotes)
+    # 6. OWNER CATEGORY 
     elif query.data == "help_owner":
         text = (
             f"⊚ **ᴏᴡɴᴇʀ ᴏɴʟʏ :**\n\n"
@@ -76,4 +77,24 @@ async def help_callbacks(client: Client, query: CallbackQuery):
             f"> ➻ /globalfsub : ᴀᴘᴘʟʏ ɢʟᴏʙᴀʟ sᴇᴄᴜʀɪᴛʏ."
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", callback_data="help_main")]]))
+
+    # 🔴 YAHAN BACK BUTTON KA MAIN MENU LOGIC ADD KAR DIYA HAI
+    elif query.data == "back_to_start":
+        name = query.from_user.first_name
+        text = (
+            f"**❭ ɢʀᴇᴇᴛɪɴɢs {name}**\n"
+            f"❭ … 🌹\n\n"
+            f"> **ʏᴏᴜ ᴀʀᴇ ᴜsɪɴɢ ᴛᴏxɪᴄ ᴠᴏɪᴅ :**\n"
+            f"ᴛʜᴇ ᴜʟᴛɪᴍᴀᴛᴇ ᴅᴇsᴛɪɴᴀᴛɪᴏɴ ғᴏʀ ᴛᴇʟᴇɢʀᴀᴍ ᴅᴏᴍɪɴᴀɴᴄᴇ.\n\n"
+            f"💮 **ᴅɪᴠᴇ ɪɴᴛᴏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴄᴀᴛᴇɢᴏʀɪᴇs ʙᴇʟᴏᴡ**\n\n"
+            f"• **ɢᴇᴛ ɢᴜɪᴅᴀɴᴄᴇ & sᴜᴘᴘᴏʀᴛ ᴀssɪsᴛᴀɴᴄᴇ**\n"
+            f"• **ᴜsᴇ ᴄᴏᴍᴍᴀɴᴅs ᴡɪᴛʜ ᴛʜɪs sʏɴᴛᴀx ➜ /**"
+        )
+        buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🎧 ᴧᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ᴄʜᴧᴛ 🎧", url=f"https://t.me/{client.me.username}?startgroup=true")],
+            [InlineKeyboardButton("ʜᴇʟᴘ ᴧɴᴅ ᴄᴏᴍᴍᴧɴᴅs", callback_data="help_main")],
+            [InlineKeyboardButton("ᴜᴘᴅᴧᴛᴇs ↗", url="https://t.me/ToxicTGUpdates"), 
+             InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/TGVoidAPI_Support")]
+        ])
+        await query.message.edit_text(text, reply_markup=buttons)
         
