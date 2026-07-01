@@ -32,17 +32,17 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
 
     # 3. REPEATER
-    elif query.data == "help_repeat":
+        elif query.data == "help_repeat":
         text = (
             f"> ⊚ **ʀᴇᴘᴇᴧᴛᴇʀ ᴄᴏᴍᴍᴧɴᴅs :**\n>\n"
-            f"> ➻ `/repeat2min` : sᴇᴛ 2 ᴍɪɴ ʀᴇᴘᴇᴀᴛᴇʀ.\n"
-            f"> ➻ `/repeat5min` : sᴇᴛ 5 ᴍɪɴ ʀᴇᴘᴇᴀᴛᴇʀ.\n"
+            f"> ➻ `/repeat {{time}}` : ᴄᴜsᴛᴏᴍ ʀᴇᴘᴇᴀᴛ (1m ᴛᴏ 24h).\n"
             f"> ➻ `/jobs` : ᴠɪᴇᴡ ᴀʟʟ ᴀᴄᴛɪᴠᴇ ᴛᴀsᴋs.\n"
             f"> ➻ `/stop` : sᴛᴏᴘ ᴀʟʟ ʀᴇᴘᴇᴀᴛᴇʀs.\n\n"
+            f"> 💡 **ᴇxᴀᴍᴘʟᴇ :** ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍsɢ ᴡɪᴛʜ `/repeat 10m`.\n\n"
             f"**ᴄʜᴀᴛ sᴄᴏᴘᴇ :** ɢʀᴏᴜᴘ ᴏɴʟʏ."
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ʙᴧᴄᴋ", "help_main")]]))
-
+    
     # 4. SECURITY
     elif query.data == "help_fsub":
         text = (
