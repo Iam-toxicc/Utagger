@@ -52,7 +52,6 @@ async def approve_user(client: Client, message: Message):
     await message.reply_text(f"✅ **{message.reply_to_message.from_user.mention} ʜᴀs ʙᴇᴇɴ ᴀᴘᴘʀᴏᴠᴇᴅ!**\n> ➻ ᴛʜᴇʏ ᴄᴀɴ ɴᴏᴡ ᴍᴇssᴀɢᴇ ʙʏᴘᴀssɪɴɢ ʙɪᴏʟɪɴᴋ sᴇᴄᴜʀɪᴛʏ.")
 
 # ----------------- CORE SECURITY ENGINE (MONITOR) -----------------
-# group=2 ensures it runs in the background for every message without blocking commands
 @Client.on_message(filters.group & ~filters.bot, group=2)
 async def biolink_check(client: Client, message: Message):
     if not message.from_user:
@@ -61,27 +60,30 @@ async def biolink_check(client: Client, message: Message):
     chat_id = message.chat.id
     settings = get_settings(chat_id)
     
-    # 1. Agar feature OFF hai, toh kuch mat karo
+    # 1. Feature OFF hai toh skip karo
     if not settings.get("biolink_enabled", False):
         return
 
     user_id = message.from_user.id
     
-    # 2. Skip checks for Admins
-    chat_member = await client.get_chat_member(chat_id, user_id)
-    if chat_member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-        return
+    # 2. Skip Admins & Owners (YAHAN DHYAN DENA - Admins par ye trigger nahi hoga)
+    try:
+        chat_member = await client.get_chat_member(chat_id, user_id)
+        if chat_member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+            return
+    except Exception:
+        pass
         
-    # 3. Skip checks if user is in APPROVED list
+    # 3. Skip Approved Users
     if user_id in APPROVED_USERS:
         return
         
-    # 4. Fetch Live Bio and Check
+    # 4. Fetch Full Profile (Fixed: get_chat gives bio, get_users doesn't)
     try:
-        user_info = await client.get_users(user_id)
-        bio = user_info.bio or ""
+        user_chat = await client.get_chat(user_id)
+        bio = user_chat.bio or ""
         
-        # Detect http/https, t.me, or @username in bio
+        # Regex to detect links or @username
         if re.search(r"(https?://|t\.me/|@[a-zA-Z0-9_]+)", bio, re.IGNORECASE):
             await message.delete()
             
@@ -94,11 +96,10 @@ async def biolink_check(client: Client, message: Message):
                 f"**ɴᴏᴛᴇ :** ᴛʜɪs ᴡᴀʀɴɪɴɢ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇᴅ ɪɴ 10 sᴇᴄᴏɴᴅs."
             )
             
-            # Auto-delete warning after 10 seconds
             await asyncio.sleep(10)
             await warning.delete()
             
     except Exception as e:
-        # Ignore minor errors like API timeouts
+        # print(f"Error fetching bio: {e}") # Debugging ke liye hata sakte ho
         pass
-        
+    
