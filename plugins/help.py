@@ -1,70 +1,35 @@
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from config import Config
 from database.db import db
-from utils.emojis import Emojis as e
-
-@Client.on_message(filters.command("help") & filters.private)
-async def help_panel(client: Client, message: Message):
-    text = f"{e.SHIELD} **TGVoid Command Center**\n\n> Choose an option to manage your ecosystem."
-    markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⚡ Commands", callback_data="help_cmds"), 
-         InlineKeyboardButton("📖 Help Guide", callback_data="help_guide")],
-        [InlineKeyboardButton("📊 System Stats (Owner Only)", callback_data="owner_stats")]
-    ])
-    await message.reply_text(text, reply_markup=markup)
 
 @Client.on_callback_query()
 async def help_callbacks(client: Client, query: CallbackQuery):
-    # 1. COMMANDS MENU
-    if query.data == "help_cmds":
-        text = f"""
-{e.FLASH} **All Available Commands** {e.FLASH}
-
-**📢 Tagging Commands:**
-`/utag` - Ultimate tag (Everyone)
-`/atag` - Advanced tagging (Custom)
-`/cancel` - Stop current process
-
-**🛡️ Security:**
-`/setfsub @channel` - Force Join
-`/fsub on/off` - Toggle security
-
-**🔄 Repeater:**
-`/repeat2min` / `/repeat60min` - Set intervals
-`/jobs` - Active tasks
-`/stop` - Stop all
-"""
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_help")]]))
-
-    # 2. HELP GUIDE
-    elif query.data == "help_guide":
-        text = f"""
-{e.SHIELD} **How to Use?** {e.SHIELD}
-
-1. **/utag:** Simple and fastest way to tag all members.
-2. **/atag:** Use this for custom messages like: `/atag Hello guys!`.
-3. **/cancel:** Use this if bot gets stuck or tagging isn't needed.
-4. **/fsub:** Ensures group quality by forcing users to join your channel first.
-"""
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_help")]]))
-
-    # 3. OWNER STATS (Restricted)
-    elif query.data == "owner_stats":
-        if query.from_user.id != Config.OWNER_ID:
-            await query.answer("❌ Access Denied! Only Owner can view this.", show_alert=True)
-            return
-        
-        u = await db.users.count_documents({})
-        g = await db.groups.count_documents({})
-        await query.message.edit_text(f"📊 **System Report**\n\nTotal Users: `{u}`\nTotal Groups: `{g}`", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_help")]]))
-
-    # 4. BACK NAVIGATION
-    elif query.data == "back_help":
+    if query.data == "help_main":
+        text = (
+            f"> **DIVE INTO ALL COMMAND CATEGORIES BELOW**\n\n"
+            f"• **GET GUIDANCE & SUPPORT ASSISTANCE**\n"
+            f"• **USE COMMANDS WITH THIS SYNTAX ➻ /**"
+        )
         markup = InlineKeyboardMarkup([
-            [InlineKeyboardButton("⚡ Commands", callback_data="help_cmds"), 
-             InlineKeyboardButton("📖 Help Guide", callback_data="help_guide")],
-            [InlineKeyboardButton("📊 System Stats (Owner Only)", callback_data="owner_stats")]
+            [InlineKeyboardButton("𝐀𝐃𝐌𝐈𝐍", "help_admin"), InlineKeyboardButton("𝐀𝐔𝐓𝐇", "help_auth"), InlineKeyboardButton("𝐁-𝐂𝐀𝐒𝐓", "help_bcast")],
+            [InlineKeyboardButton("𝐏𝐋𝐀𝐘", "help_play"), InlineKeyboardButton("𝐒𝐔𝐃𝐎", "help_sudo"), InlineKeyboardButton("𝐑𝐄𝐒𝐓𝐑𝐈𝐂𝐓", "help_restrict")],
+            [InlineKeyboardButton("𝐓𝐇𝐔𝐌𝐁𝐍𝐀𝐈𝐋", "help_thumb"), InlineKeyboardButton("𝐒𝐓𝐀𝐑𝐓", "help_start"), InlineKeyboardButton("𝐀𝐔𝐓𝐎𝐏𝐋𝐀𝐘", "help_auto")],
+            [InlineKeyboardButton("𝐁𝐀𝐂𝐊", "back_to_start")]
         ])
-        await query.message.edit_text("Manage your ecosystem:", reply_markup=markup)
+        await query.message.edit_text(text, reply_markup=markup)
+
+    # Example: Basic Commands Page
+    elif query.data == "help_start":
+        text = (
+            f"⊚ **BASIC COMMANDS :**\n\n"
+            f"➻ `/start` : INITIALIZE THE SERVICE.\n"
+            f"➻ `/help` : ACCESS THE COMMAND GUIDELINES.\n"
+            f"➻ `/stats` : VIEW COMPREHENSIVE BOT METRICS."
+        )
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
+
+    elif query.data == "back_to_start":
+        # Yahan wahi Start message wala logic call karo ya redirect karo
+        await query.answer("Returning...", show_alert=True)
         
