@@ -5,12 +5,11 @@ from config import Config
 @Client.on_callback_query()
 async def help_callbacks(client: Client, query: CallbackQuery):
     
-    # 1. MAIN GRID MENU
     if query.data == "help_main":
         text = (
-            f"> **DIVE INTO ALL COMMAND CATEGORIES BELOW**\n\n"
-            f"• **GET GUIDANCE & SUPPORT ASSISTANCE**\n"
-            f"• **USE COMMANDS WITH THIS SYNTAX ➻ /**"
+            f"> 💮 **ᴅɪᴠᴇ ɪɴᴛᴏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅ ᴄᴀᴛᴇɢᴏʀɪᴇs ʙᴇʟᴏᴡ**\n\n"
+            f"• **ɢᴇᴛ ɢᴜɪᴅᴀɴᴄᴇ & sᴜᴘᴘᴏʀᴛ ᴀssɪsᴛᴀɴᴄᴇ**\n"
+            f"• **ᴜsᴇ ᴄᴏᴍᴍᴀɴᴅs ᴡɪᴛʜ ᴛʜɪs sʏɴᴛᴀx ➜ /**"
         )
         markup = InlineKeyboardMarkup([
             [InlineKeyboardButton("𝐓𝐀𝐆𝐆𝐄𝐑", "help_tag"), InlineKeyboardButton("𝐑𝐄𝐏𝐄𝐀𝐓𝐄𝐑", "help_repeat"), InlineKeyboardButton("𝐒𝐄𝐂𝐔𝐑𝐈𝐓𝐘", "help_fsub")],
@@ -18,54 +17,37 @@ async def help_callbacks(client: Client, query: CallbackQuery):
         ])
         await query.message.edit_text(text, reply_markup=markup)
 
-    # 2. TAGGER CATEGORY
-    elif query.data == "help_tag":
-        text = (
-            f"⊚ **TAGGING COMMANDS :**\n\n"
-            f"➻ `/utag` : TAG ALL MEMBERS IN GROUP.\n"
-            f"➻ `/atag` : ADVANCED CUSTOM TAGGING.\n"
-            f"➻ `/cancel` : STOP ANY ACTIVE PROCESS.\n"
-            f"➻ `/setformat` : SET TAG STYLE FORMAT."
-        )
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
-
-    # 3. REPEATER CATEGORY
-    elif query.data == "help_repeat":
-        text = (
-            f"⊚ **REPEATER COMMANDS :**\n\n"
-            f"➻ `/repeat2min` : SET 2 MIN REPEATER.\n"
-            f"➻ `/repeat5min` : SET 5 MIN REPEATER.\n"
-            f"➻ `/repeat60min` : SET 1 HOUR REPEATER.\n"
-            f"➻ `/jobs` : VIEW ALL ACTIVE TASKS.\n"
-            f"➻ `/stop` : STOP ALL REPEATERS."
-        )
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
-
-    # 4. SECURITY (FSUB) CATEGORY
-    elif query.data == "help_fsub":
-        text = (
-            f"⊚ **SECURITY COMMANDS :**\n\n"
-            f"➻ `/fsub on/off` : TOGGLE FORCE JOIN.\n"
-            f"➻ `/setfsub @channel` : SET F-SUB LINK.\n"
-            f"➻ `/check` : CHECK USER STATUS."
-        )
-        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
-
-    # 5. ADMIN/OWNER CATEGORY
+    # ADMIN CATEGORY (Updated with your design)
     elif query.data == "help_admin":
         text = (
-            f"⊚ **ADMIN COMMANDS :**\n\n"
-            f"➻ `/settings` : GROUP CONFIGURATION.\n"
-            f"➻ `/ping` : CHECK BOT LATENCY."
+            f"⊚ **ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs :**\n\n"
+            f"➻ `/settings` : ᴀᴅᴊᴜsᴛ ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ ᴏᴘᴛɪᴏɴs.\n"
+            f"➻ `/ping` : ᴍᴇᴀsᴜʀᴇ sʏsᴛᴇᴍ ʟᴀᴛᴇɴᴄʏ ᴀɴᴅ ᴘɪɴɢ.\n"
+            f"➻ `/reload` : ʀᴇғʀᴇsʜ ᴀᴅᴍɪɴ ᴅᴀᴛᴀ ᴄᴀᴄʜᴇ.\n"
+            f"➻ `/reboot` : ʀᴇsᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ sᴇʀᴠɪᴄᴇ.\n"
+            f"➻ `/stats` : ᴠɪᴇᴡ ᴄᴏᴍᴘʀᴇʜᴇɴsɪᴠᴇ ʙᴏᴛ ᴍᴇᴛʀɪᴄs.\n"
+            f"➻ `/help` : ᴀᴄᴄᴇss ᴛʜᴇ ᴄᴏᴍᴍᴀɴᴅ ɢᴜɪᴅᴇʟɪɴᴇs."
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
-        
+
+    # TAGGER CATEGORY
+    elif query.data == "help_tag":
+        text = (
+            f"⊚ **ᴛᴀɢɢɪɴɢ ᴄᴏᴍᴍᴀɴᴅs :**\n\n"
+            f"➻ `/utag` : ᴛᴀɢ ᴀʟʟ ᴍᴇᴍʙᴇʀs ɪɴ ɢʀᴏᴜᴘ.\n"
+            f"➻ `/atag` : ᴀᴅᴠᴀɴᴄᴇᴅ ᴄᴜsᴛᴏᴍ ᴛᴀɢɢɪɴɢ.\n"
+            f"➻ `/cancel` : sᴛᴏᴘ ᴀɴʏ ᴀᴄᴛɪᴠᴇ ᴘʀᴏᴄᴇss.\n"
+            f"➻ `/setformat` : sᴇᴛ ᴛᴀɢ sᴛʏʟᴇ ғᴏʀᴍᴀᴛ."
+        )
+        await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
+
+    # Baki categories waisi hi rahengi...
     elif query.data == "help_owner":
         text = (
-            f"⊚ **OWNER ONLY :**\n\n"
-            f"➻ `/broadcast` : SEND MSG TO ALL.\n"
-            f"➻ `/stats` : VIEW SYSTEM METRICS.\n"
-            f"➻ `/globalfsub` : APPLY GLOBAL SECURITY."
+            f"⊚ **ᴏᴡɴᴇʀ ᴏɴʟʏ :**\n\n"
+            f"➻ `/broadcast` : sᴇɴᴅ ᴍsɢ ᴛᴏ ᴀʟʟ ᴜsᴇʀs.\n"
+            f"➻ `/stats` : ᴠɪᴇᴡ sʏsᴛᴇᴍ ᴍᴇᴛʀɪᴄs.\n"
+            f"➻ `/globalfsub` : ᴀᴘᴘʟʏ ɢʟᴏʙᴀʟ sᴇᴄᴜʀɪᴛʏ."
         )
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("BACK", "help_main")]]))
         
