@@ -81,38 +81,49 @@ async def settings_cmd(client: Client, message: Message):
 async def close_settings(client: Client, query):
     await query.message.delete()
     
-# ----------------- SETTINGS TOGGLE LOGIC -----------------
-@Client.on_callback_query(filters.regex(r"^toggle_"))
-async def toggle_settings(client: Client, query):
-    # 1. Admin Verification: Check if the person clicking is an admin
+# ----------------- SETTINGS TOGGLE & CLOSE LOGIC -----------------
+@Client.on_callback_query(filters.regex(r"^(toggle_|close_panel)"))
+async def admin_callbacks(client: Client, query):
+    
+    # 1. Close Panel Logic
+    if query.data == "close_panel":
+        return await query.message.delete()
+
+    # 2. Admin Verification for Toggles
     user = await client.get_chat_member(query.message.chat.id, query.from_user.id)
     if user.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
         return await query.answer("❌ You must be an admin to change settings!", show_alert=True)
 
     data = query.data
     markup = query.message.reply_markup
+    
+    new_keyboard = []
+    action_text = "Updated"
 
-    # 2. Dynamic Toggle Logic
+    # 3. Smart Keyboard Reconstruction (100% Working)
     for row in markup.inline_keyboard:
+        new_row = []
         for btn in row:
             if btn.callback_data == data:
+                # Agar OFF hai toh ON karo
                 if "❌" in btn.text:
-                    # Switch to ON
-                    btn.text = btn.text.replace("ᴏғғ ❌", "ᴏɴ ✅")
+                    new_text = btn.text.replace("ᴏғғ ❌", "ᴏɴ ✅")
                     action_text = "Enabled ✅"
-                    
-                    # 🔴 YAHAN TUM APNA DB LOGIC LAGA SAKTE HO
-                    # Example: await db.set_group_setting(query.message.chat.id, data, True)
-                    
+                # Agar ON hai toh OFF karo
                 elif "✅" in btn.text:
-                    # Switch to OFF
-                    btn.text = btn.text.replace("ᴏɴ ✅", "ᴏғғ ❌")
+                    new_text = btn.text.replace("ᴏɴ ✅", "ᴏғғ ❌")
                     action_text = "Disabled ❌"
-                    
-                    # 🔴 YAHAN TUM APNA DB LOGIC LAGA SAKTE HO
-                    # Example: await db.set_group_setting(query.message.chat.id, data, False)
+                else:
+                    new_text = btn.text
+                
+                # Naya button append karo
+                new_row.append(InlineKeyboardButton(new_text, callback_data=btn.callback_data))
+            else:
+                # Baaki buttons ko waisa hi rehne do
+                new_row.append(btn)
+        new_keyboard.append(new_row)
 
-    # 3. Update the UI and send a toast notification
-    await query.message.edit_reply_markup(markup)
+    # 4. Update Message and Send Pop-up
+    await query.message.edit_reply_markup(InlineKeyboardMarkup(new_keyboard))
     await query.answer(f"Setting {action_text}", show_alert=False)
     
