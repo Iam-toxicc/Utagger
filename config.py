@@ -12,9 +12,13 @@ class Config:
     
     OWNER_ID = int(os.environ.get("OWNER_ID", "8238387029"))
     
-    # Void ecosystem logging channel
-    LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1003748226916"))
+    # Toxic ecosystem logging channel (Renamed to LOGGER_ID to match main.py)
+    LOGGER_ID = int(os.environ.get("LOGGER_ID", "-1003748226916"))
+    
+    # Updates Channel and Support Group Redirects
+    UPDATES_CHANNEL = os.environ.get("UPDATES_CHANNEL", "https://t.me/ToxicTGUpdates") # Yahan channel username daalo (bina @ ke)
+    SUPPORT_GROUP = os.environ.get("SUPPORT_GROUP", "https://t.me/ToxicStoreSupport")       # Yahan group username daalo (bina @ ke)
     
     # Premium start image URL
     START_PIC = os.environ.get("START_PIC", "")
-  
+    
